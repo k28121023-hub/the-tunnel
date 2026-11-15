@@ -19,12 +19,12 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 func _physics_process(_delta: float) -> void:
-	if not opened:
+	if not opened or _has_pending_task():
 		for body in get_overlapping_bodies():
 			_on_body_entered(body)
 
 func _on_body_entered(body: Node2D) -> void:
-	if opened or body != get_tree().current_scene.get_node_or_null("Player"):
+	if (opened and not _has_pending_task()) or body != get_tree().current_scene.get_node_or_null("Player"):
 		return
 	# Reject stale callbacks unless the actual player collider touches the box.
 	if not overlaps_body(body) or body.health <= 0:
@@ -33,6 +33,9 @@ func _on_body_entered(body: Node2D) -> void:
 	if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 		return
 	var manager = get_tree().current_scene.get_node("WordTasks")
+	if opened:
+		manager.start_task(task_number, self)
+		return
 	content = manager.resolve_box(task_number, slot)
 	if content == "task" and not manager.start_task(task_number, self):
 		return
@@ -44,6 +47,10 @@ func _on_body_entered(body: Node2D) -> void:
 	if content != "task":
 		tween.chain().tween_callback(_spawn_pickup)
 
+func _has_pending_task() -> bool:
+	var manager = get_tree().current_scene.get_node_or_null("WordTasks")
+	return manager != null and task_number == manager.completed + 1 and manager.active_task <= manager.completed and manager.TASKS.has(task_number)
+
 func _spawn_pickup() -> void:
 	if has_node("Pickup"):
 		return
@@ -53,3 +60,4 @@ func _spawn_pickup() -> void:
 	pickup.item_id = content
 	pickup.box_id = box_id
 	add_child(pickup)
+

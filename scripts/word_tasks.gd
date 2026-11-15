@@ -54,10 +54,10 @@ func resolve_box(number: int, slot: int) -> String:
 	# Guarantee the first unopened box in the next task's section gives its task.
 	if number == completed + 1 and active_task <= completed and TASKS.has(number):
 		contents[slot] = "task"
-	elif contents[slot] == "task" and number <= active_task:
+	elif contents[slot] == "task":
 		contents[slot] = reward_for_player()
-	# Future task boxes stay reserved until the previous quiz is complete.
-	# Never permanently replace the only source of an upcoming task with loot.
+	# Locked tasks give loot now; opened boxes can still grant their task later.
+	# TaskBox checks eligibility again on contact, including after streaming reloads.
 	elif contents[slot] != "task":
 		# Resolve all item rewards at contact, including unarmed weapon rewards.
 		contents[slot] = reward_for_player()
@@ -162,3 +162,4 @@ func submit(word: String, number: int) -> bool:
 		ui.show_result("Wrong", false)
 		get_parent().get_node("Player").take_damage(25, true)
 	return true
+
