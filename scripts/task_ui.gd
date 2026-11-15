@@ -1,5 +1,5 @@
 extends CanvasLayer
-const TASK_DATA := {"task": 1, "answer": "receipt", "meaning": "收據"}
+const TASK_DATA := {"task": 1, "answer": "Human resource department", "meaning": "人資部門"}
 var started := false
 var arrived := false
 var source := Vector2.ZERO

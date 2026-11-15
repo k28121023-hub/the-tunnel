@@ -3,7 +3,6 @@ extends CanvasLayer
 var enabled := false
 var pad := Node2D.new()
 var buttons: Array[TouchScreenButton] = []
-var toggle := Button.new()
 const ACTIONS := ["move_left", "move_right", "crouch", "jump", "attack"]
 const LABELS := ["◀", "▶", "▼", "▲", "攻擊"]
 
@@ -42,11 +41,9 @@ func _ready() -> void:
 		button.released.connect(func(): disk.color = Color(0.08,0.13,0.21,0.78))
 		pad.add_child(button)
 		buttons.append(button)
-	toggle.text = "觸控"
-	toggle.custom_minimum_size = Vector2(90,44)
-	toggle.pressed.connect(func(): _set_enabled(not enabled))
-	add_child(toggle)
 	get_viewport().size_changed.connect(_layout)
+	# No on-screen toggle. Touch devices get the D-pad automatically; a first
+	# tap on other devices can still enable it.
 	enabled = DisplayServer.is_touchscreen_available() or OS.has_feature("mobile")
 	if OS.has_feature("web"):
 		enabled = enabled or bool(JavaScriptBridge.eval("navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches"))
@@ -56,10 +53,6 @@ func _set_enabled(value: bool) -> void:
 	_release()
 	enabled = value
 	pad.visible = value
-	toggle.text = "隱藏按鈕" if value else "觸控"
-	var help := get_parent().get_parent().get_node_or_null("HUD/Controls") as Label
-	if help != null:
-		help.text = "▲ 輕點跳躍／按住跳更高 · ▼ 蹲下" if value else "A/D: Move | S: Crouch | W: Jump | Space: Attack | Q: Switch | R: Restart"
 	_layout()
 	if not value:
 		var level := get_parent().get_parent()
@@ -79,7 +72,6 @@ func _layout() -> void:
 	for i in range(buttons.size()):
 		buttons[i].position = positions[i]
 		buttons[i].scale = Vector2.ONE*factor
-	toggle.position = Vector2(size.x-140,12)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch and event.pressed and not enabled:
@@ -121,7 +113,7 @@ func _position_mobile_hud() -> void:
 	var shift := get_viewport().get_visible_rect().size.y*0.22 if enabled else 0.0
 	var hud := level.get_node_or_null("HUD")
 	if hud != null:
-		for entry in [["Controls",16.0],["Status",44.0],["Health",74.0]]:
+		for entry in [["Status",16.0],["Health",46.0]]:
 			var label := hud.get_node_or_null(entry[0]) as Control
 			if label != null: label.position.y = entry[1]+shift
 	var tasks := level.get_node_or_null("TaskUI") as CanvasLayer

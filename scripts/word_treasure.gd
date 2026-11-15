@@ -4,8 +4,9 @@ const LOS := preload("res://scripts/interact_los.gd")
 const UI_FONT := preload("res://assets/fonts/ChineseUI.tres")
 @export var task_number := 1
 var opened := false
-const WORD_HALF_SIZE := Vector2(60, 18)
-const WORD_DISTANCE := 112.0
+# Measured per spawn from the actual option strings so long phrases fit.
+var word_half_size := Vector2(60, 18)
+var word_distance := 112.0
 var solids: Array[Dictionary] = []
 var hazards: Array[Rect2] = []
 var reachable: Array[Vector2] = []
@@ -60,6 +61,16 @@ func _on_body_entered(body: Node2D) -> void:
 	tween.tween_interval(0.12)
 	tween.tween_callback(_spawn_words)
 
+
+func _measure_tokens(options: Array[String]) -> void:
+	var font: Font = ThemeDB.fallback_font
+	var width := 68.0
+	for word in options:
+		width = maxf(width, font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 16.0)
+	word_half_size = Vector2(width * 0.5, 12.0)
+	# Keep neighboring cards from overlapping, including long department names.
+	word_distance = maxf(112.0, width + 16.0)
+
 func _spawn_words() -> void:
 	if words_spawned:
 		return
@@ -68,6 +79,7 @@ func _spawn_words() -> void:
 	options = options.filter(func(word: String): return not manager.used_words.has(word))
 	if options.is_empty():
 		return
+	_measure_tokens(options)
 	var destinations := random_landings(options.size())
 	if destinations.size() != options.size():
 		# High zoom, a short viewport, or a mid-pan camera can reject every
@@ -179,9 +191,11 @@ func _visible_bounds() -> Rect2:
 	# Keep the entire card within the viewport; HUD exclusions are local.
 	var start := inverse * Vector2(16, 16)
 	var end := inverse * (viewport_size - Vector2(16, 16))
-	return Rect2(start, end - start).grow_individual(-WORD_HALF_SIZE.x, -WORD_HALF_SIZE.y, -WORD_HALF_SIZE.x, -WORD_HALF_SIZE.y)
+	return Rect2(start, end - start).grow_individual(-word_half_size.x, -word_half_size.y, -word_half_size.x, -word_half_size.y)
 
-func random_landings(count: int, min_spread := 65.0, min_distance := WORD_DISTANCE) -> Array[Vector2]:
+func random_landings(count: int, min_spread := 65.0, min_distance := -1.0) -> Array[Vector2]:
+	if min_distance < 0.0:
+		min_distance = word_distance
 	_read_terrain()
 	_find_reachable()
 	var bounds := _visible_bounds()
@@ -198,10 +212,10 @@ func random_landings(count: int, min_spread := 65.0, min_distance := WORD_DISTAN
 			if not _clear_hud(point):
 				continue
 			var player := get_tree().current_scene.get_node("Player") as Node2D
-			if Rect2(point - WORD_HALF_SIZE, WORD_HALF_SIZE * 2.0).intersects(Rect2(player.global_position - Vector2(21, 28), Vector2(42, 56))):
+			if Rect2(point - word_half_size, word_half_size * 2.0).intersects(Rect2(player.global_position - Vector2(21, 28), Vector2(42, 56))):
 				continue
 			# The entire word and its bobbing margin must fit in open space.
-			if not _clear_rect(Rect2(point - WORD_HALF_SIZE, WORD_HALF_SIZE * 2.0)):
+			if not _clear_rect(Rect2(point - word_half_size, word_half_size * 2.0)):
 				continue
 			# Clear standing/jumping corridor from a reachable platform to the word.
 			if not _clear_rect(Rect2(Vector2(point.x - 11, point.y - 18), Vector2(22, anchor.y - point.y + 36))):
@@ -242,10 +256,10 @@ func _try_add_landing(point: Vector2, slots: Array[Vector2], min_distance := 52.
 		return false
 	if not _clear_hud(point) or point.distance_to(global_position) > 480.0:
 		return false
-	if not _clear_rect(Rect2(point - WORD_HALF_SIZE, WORD_HALF_SIZE * 2.0)):
+	if not _clear_rect(Rect2(point - word_half_size, word_half_size * 2.0)):
 		return false
 	var player := get_tree().current_scene.get_node_or_null("Player") as Node2D
-	if player != null and Rect2(point - WORD_HALF_SIZE, WORD_HALF_SIZE * 2.0).intersects(Rect2(player.global_position - Vector2(21, 28), Vector2(42, 56))):
+	if player != null and Rect2(point - word_half_size, word_half_size * 2.0).intersects(Rect2(player.global_position - Vector2(21, 28), Vector2(42, 56))):
 		return false
 	for other in slots:
 		if point.distance_to(other) < min_distance:
@@ -254,27 +268,28 @@ func _try_add_landing(point: Vector2, slots: Array[Vector2], min_distance := 52.
 	return true
 
 func _fallback_landings(count: int) -> Array[Vector2]:
-	var relaxed := random_landings(count, 28.0, 76.0)
+	var relaxed := random_landings(count, 28.0, maxf(76.0, word_distance * 0.75))
 	if relaxed.size() == count:
 		return relaxed
 	var slots: Array[Vector2] = []
+	var gap := maxf(100.0, word_half_size.x * 2.0 + 16.0)
 	var offsets: Array[Vector2] = [
-		Vector2(-100, -36), Vector2(100, -36), Vector2(-50, -78), Vector2(50, -78),
-		Vector2(0, -56), Vector2(-150, -20), Vector2(150, -20), Vector2(-70, -110),
-		Vector2(70, -110), Vector2(0, -100), Vector2(-180, -48), Vector2(180, -48),
+		Vector2(-gap, -36), Vector2(gap, -36), Vector2(-gap * 0.5, -78), Vector2(gap * 0.5, -78),
+		Vector2(0, -56), Vector2(-gap * 1.4, -20), Vector2(gap * 1.4, -20), Vector2(-gap * 0.7, -110),
+		Vector2(gap * 0.7, -110), Vector2(0, -100), Vector2(-gap * 1.7, -48), Vector2(gap * 1.7, -48),
 	]
 	for offset in offsets:
-		if _try_add_landing(global_position + offset, slots) and slots.size() == count:
+		if _try_add_landing(global_position + offset, slots, word_distance * 0.7) and slots.size() == count:
 			return slots
 	for anchor in reachable:
 		for height in [24.0, 48.0, 72.0, 96.0]:
-			if _try_add_landing(anchor + Vector2(0, -height), slots, 64.0) and slots.size() == count:
+			if _try_add_landing(anchor + Vector2(0, -height), slots, maxf(64.0, word_distance * 0.7)) and slots.size() == count:
 				return slots
 	return slots
 
 func _clear_hud(point: Vector2) -> bool:
 	var canvas := get_viewport().get_canvas_transform()
-	var screen_card := Rect2(canvas * (point - WORD_HALF_SIZE), canvas * (point + WORD_HALF_SIZE) - canvas * (point - WORD_HALF_SIZE))
+	var screen_card := Rect2(canvas * (point - word_half_size), canvas * (point + word_half_size) - canvas * (point - word_half_size))
 	if screen_card.intersects(Rect2(0, 0, get_viewport_rect().size.x, 98)) or screen_card.intersects(Rect2(12, 98, 230, 80)):
 		return false
 	var panel := get_tree().current_scene.get_node_or_null("TaskUI/TaskPanel") as Control

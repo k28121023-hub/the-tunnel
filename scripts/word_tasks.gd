@@ -2,26 +2,17 @@ extends Node
 const BOX := preload("res://scenes/TaskBox.tscn")
 const CHEST := preload("res://scenes/WordChest.tscn")
 const TASKS := {
-	1: {"task": 1, "meaning": "收據", "answer": "receipt"},
-	2: {"task": 2, "meaning": "發票", "answer": "invoice"},
-	3: {"task": 3, "meaning": "行程表", "answer": "schedule"},
-	4: {"task": 4, "meaning": "顧客", "answer": "customer"},
-	5: {"task": 5, "meaning": "訂單", "answer": "order"},
-	6: {"task": 6, "meaning": "付款", "answer": "payment"},
-	7: {"task": 7, "meaning": "折扣", "answer": "discount"},
-	8: {"task": 8, "meaning": "預算", "answer": "budget"},
-	9: {"task": 9, "meaning": "會議", "answer": "meeting"},
-	10: {"task": 10, "meaning": "截止日期", "answer": "deadline"},
-	11: {"task": 11, "meaning": "合約", "answer": "contract"},
-	12: {"task": 12, "meaning": "供應商", "answer": "supplier"},
-	13: {"task": 13, "meaning": "出貨", "answer": "shipment"},
-	14: {"task": 14, "meaning": "倉庫", "answer": "warehouse"},
-	15: {"task": 15, "meaning": "庫存", "answer": "inventory"},
-	16: {"task": 16, "meaning": "利潤", "answer": "profit"},
-	17: {"task": 17, "meaning": "支出", "answer": "expense"},
-	18: {"task": 18, "meaning": "退款", "answer": "refund"},
-	19: {"task": 19, "meaning": "保固", "answer": "warranty"},
-	20: {"task": 20, "meaning": "預約", "answer": "appointment"}
+	1: {"task": 1, "meaning": "人資部門", "answer": "Human resource department"},
+	2: {"task": 2, "meaning": "運送部門", "answer": "shipping department"},
+	3: {"task": 3, "meaning": "顧客服務", "answer": "customer service"},
+	4: {"task": 4, "meaning": "管理", "answer": "management"},
+	5: {"task": 5, "meaning": "資訊科技部門", "answer": "IT department"},
+	6: {"task": 6, "meaning": "行銷部門", "answer": "Marketing department"},
+	7: {"task": 7, "meaning": "財務部門", "answer": "finance department"},
+	8: {"task": 8, "meaning": "研發部門", "answer": "research and development"},
+	9: {"task": 9, "meaning": "習慣", "answer": "get used to"},
+	10: {"task": 10, "meaning": "接受某人說法", "answer": "take one's word"},
+	11: {"task": 11, "meaning": "向某人提供", "answer": "fill sb in on"}
 }
 var active_task := 0
 var completed := 0
@@ -94,16 +85,17 @@ func configure_section(section: Node2D, index: int, positions: Array = BOX_POSIT
 			box.get_node("Lid").position.y = box.open_lid_y
 			if box.content != "task" and not collected_boxes.has(box.box_id):
 				box.call_deferred("_spawn_pickup")
-	var chest := CHEST.instantiate() as Node2D
-	chest.name = "WordChest"
-	chest.task_number = number
-	chest.position = chest_position
-	section.add_child(chest)
-	if opened_chests.has(number):
-		chest.opened = true
-		chest.get_node("ChestLid").rotation = -0.85
-		if number == active_task and number > completed:
-			chest.call_deferred("_spawn_words")
+	if TASKS.has(number):
+		var chest := CHEST.instantiate() as Node2D
+		chest.name = "WordChest"
+		chest.task_number = number
+		chest.position = chest_position
+		section.add_child(chest)
+		if opened_chests.has(number):
+			chest.opened = true
+			chest.get_node("ChestLid").rotation = -0.85
+			if number == active_task and number > completed:
+				chest.call_deferred("_spawn_words")
 
 func _cover_background_boxes(section: Node2D) -> void:
 	# Reuse clean regions of the existing background, as the original box repair
@@ -130,6 +122,9 @@ func _cover_background_boxes(section: Node2D) -> void:
 		repair.scale = background.scale
 		repair.z_index = 1
 		section.add_child(repair)
+
+func task_count() -> int:
+	return TASKS.size()
 
 func start_task(number: int, box: Node2D) -> bool:
 	if number != completed + 1 or active_task > completed or not TASKS.has(number):

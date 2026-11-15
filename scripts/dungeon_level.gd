@@ -13,7 +13,7 @@ const GENERATE_AHEAD := 1000.0
 const KEEP_BEHIND := 2
 const KEEP_AHEAD := 2
 
-@export_range(1, 10000) var total_questions: int = 20
+@export_range(1, 10000) var total_questions: int = 11
 @export var correct_answers: int = 0
 var shake_remaining := 0.0
 var flash_tween: Tween
@@ -31,7 +31,7 @@ func _ready() -> void:
 	player.health_changed.connect(_on_health_changed)
 	player.damaged.connect(_on_player_damaged)
 	_on_health_changed(player.health, player.max_health)
-	total_questions = 20
+	total_questions = $WordTasks.task_count()
 	correct_answers = clampi(correct_answers, 0, total_questions)
 	_ensure_section(0)
 	_update_stream()
@@ -55,7 +55,7 @@ func _physics_process(_delta: float) -> void:
 
 func _update_stream() -> void:
 	var current := maxi(0, floori(player.position.x / SECTION_WIDTH))
-	if ending_index < 0 and correct_answers >= total_questions and $WordTasks.completed >= 20:
+	if ending_index < 0 and correct_answers >= total_questions and $WordTasks.completed >= $WordTasks.task_count():
 		ending_index = highest_generated_index + 1
 		camera.limit_right = int(ending_index * SECTION_WIDTH + ENDING_WIDTH)
 		_ensure_section(ending_index)
@@ -109,7 +109,7 @@ func _ensure_section(index: int) -> void:
 			section.add_child(guard)
 
 func _on_exit_reached() -> void:
-	if level_complete or correct_answers < total_questions or $WordTasks.completed < 20:
+	if level_complete or correct_answers < total_questions or $WordTasks.completed < $WordTasks.task_count():
 		return
 	if not sections.has(ending_index) or not sections[ending_index].get_node("Exit").overlaps_body(player) or player.health <= 0:
 		return
