@@ -1,6 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource type="Script" path="res://scripts/task_box.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/task_box_original.png" id="2"]
+[ext_resource type="Shader" path="res://scripts/box_lid.gdshader" id="3"]
+[sub_resource type="ShaderMaterial" id="CleanLid"]
+shader = ExtResource("3")
 [sub_resource type="RectangleShape2D" id="Contact"]
 size = Vector2(28.8, 27.6)
 [node name="TaskBox" type="Area2D"]
@@ -21,6 +24,7 @@ region_enabled = true
 region_rect = Rect2(14, 31, 48, 40)
 region_filter_clip_enabled = true
 [node name="Lid" type="Sprite2D" parent="."]
+material = SubResource("CleanLid")
 texture_filter = 1
 position = Vector2(-14.4, -10)
 scale = Vector2(0.6, 0.6)
