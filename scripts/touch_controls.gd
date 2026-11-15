@@ -118,7 +118,7 @@ func _process(_delta: float) -> void:
 
 func _position_mobile_hud() -> void:
 	var level := get_parent().get_parent()
-	var shift := clampf(get_viewport().get_visible_rect().size.y*0.075,48.0,72.0) if enabled else 0.0
+	var shift := get_viewport().get_visible_rect().size.y*0.22 if enabled else 0.0
 	var hud := level.get_node_or_null("HUD")
 	if hud != null:
 		for entry in [["Controls",16.0],["Status",44.0],["Health",74.0]]:
@@ -133,3 +133,4 @@ func _position_mobile_hud() -> void:
 		get_parent().item_icons.position.y = 120+shift
 	else:
 		get_parent().item_icons.position.y = 126+shift
+
