@@ -1,0 +1,72 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/dungeon_level.gd" id="2"]
+
+[ext_resource type="PackedScene" path="res://scenes/TaskUI.tscn" id="task_ui"]
+
+[ext_resource type="Script" path="res://scripts/word_tasks.gd" id="word_tasks"]
+
+
+[sub_resource type="RectangleShape2D" id="LeftWall"]
+size = Vector2(24, 1500)
+
+[node name="DungeonLevel01" type="Node2D"]
+script = ExtResource("2")
+
+[node name="Sections" type="Node2D" parent="."]
+
+[node name="LeftBoundary" type="StaticBody2D" parent="."]
+position = Vector2(-12, 300)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftBoundary"]
+shape = SubResource("LeftWall")
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector2(100, 360)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(384, 341.5)
+zoom = Vector2(1.5, 1.5)
+limit_left = 0
+limit_top = 0
+limit_right = 2147483647
+limit_bottom = 683
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Controls" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 16.0
+theme_override_font_sizes/font_size = 18
+text = "A/D: Move | S/Down: Crouch | Shift/W/Up: Jump | Space: Attack | Q: Switch | R: Restart"
+
+[node name="Status" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 44.0
+theme_override_colors/font_color = Color(1, 0.86, 0.45, 1)
+theme_override_font_sizes/font_size = 20
+text = "ANSWERS"
+
+[node name="DamageFlash" type="ColorRect" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0.15, 0.1, 0)
+
+[node name="Health" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 74.0
+theme_override_colors/font_color = Color(1, 0.4, 0.35, 1)
+theme_override_font_sizes/font_size = 20
+text = "HP 100 / 100"
+
+[node name="TaskUI" parent="." instance=ExtResource("task_ui")]
+
+[node name="WordTasks" type="Node" parent="."]
+script = ExtResource("word_tasks")

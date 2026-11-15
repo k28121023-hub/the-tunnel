@@ -1,0 +1,429 @@
+[gd_scene load_steps=46 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/dungeon_level_01.png" id="1"]
+[ext_resource type="Script" path="res://scripts/dungeon_section.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/WaterArea.tscn" id="3_water"]
+
+
+[ext_resource type="PackedScene" path="res://scenes/SpikeArea.tscn" id="4_spikes"]
+
+[ext_resource type="PackedScene" path="res://scenes/CageCrow.tscn" id="crow"]
+
+[sub_resource type="RectangleShape2D" id="LeftEdgeFloor"]
+size = Vector2(32, 18)
+
+[sub_resource type="RectangleShape2D" id="LeftUpper"]
+size = Vector2(51, 8)
+
+[sub_resource type="RectangleShape2D" id="LeftPillar"]
+size = Vector2(21, 78)
+
+[sub_resource type="RectangleShape2D" id="StartingFloor"]
+size = Vector2(384, 21)
+
+[sub_resource type="RectangleShape2D" id="FirstDropWall"]
+size = Vector2(21, 45)
+
+[sub_resource type="RectangleShape2D" id="FirstLowerFloor"]
+size = Vector2(130, 20)
+
+[sub_resource type="RectangleShape2D" id="SmallStep"]
+size = Vector2(51, 21)
+
+[sub_resource type="RectangleShape2D" id="FirstRiseWall"]
+size = Vector2(21, 57)
+
+[sub_resource type="RectangleShape2D" id="FirstRaisedFloor"]
+size = Vector2(135, 8)
+
+[sub_resource type="RectangleShape2D" id="PitLeftWall"]
+size = Vector2(21, 104)
+
+[sub_resource type="RectangleShape2D" id="PitFloor"]
+size = Vector2(88, 19)
+
+[sub_resource type="RectangleShape2D" id="PitStep"]
+size = Vector2(68, 20)
+
+[sub_resource type="RectangleShape2D" id="PitRightWall"]
+size = Vector2(21, 47)
+
+[sub_resource type="RectangleShape2D" id="MiddleRaisedFloor"]
+size = Vector2(140, 8)
+
+[sub_resource type="RectangleShape2D" id="MiddleRiseWall"]
+size = Vector2(21, 39)
+
+[sub_resource type="RectangleShape2D" id="MiddleFloor"]
+size = Vector2(144, 21)
+
+[sub_resource type="RectangleShape2D" id="MiddleDropWall"]
+size = Vector2(21, 41)
+
+[sub_resource type="RectangleShape2D" id="LowerMiddleFloor"]
+size = Vector2(125, 20)
+
+[sub_resource type="RectangleShape2D" id="PoolLeftWall"]
+size = Vector2(22, 107)
+
+[sub_resource type="RectangleShape2D" id="PoolFloor"]
+size = Vector2(131, 19)
+
+[sub_resource type="RectangleShape2D" id="PoolRightWall"]
+size = Vector2(22, 122)
+
+[sub_resource type="RectangleShape2D" id="RightLowerFloor"]
+size = Vector2(264, 21)
+
+[sub_resource type="RectangleShape2D" id="RightRaisedFloor"]
+size = Vector2(148, 8)
+
+[sub_resource type="RectangleShape2D" id="RightRiseWall"]
+size = Vector2(21, 50)
+
+[sub_resource type="RectangleShape2D" id="RightStepFloor"]
+size = Vector2(160, 20)
+
+[sub_resource type="RectangleShape2D" id="RightFloor"]
+size = Vector2(197, 21)
+
+[sub_resource type="RectangleShape2D" id="RightDropWall"]
+size = Vector2(21, 49)
+
+[sub_resource type="RectangleShape2D" id="RightEndFloor"]
+size = Vector2(27, 19)
+
+[sub_resource type="RectangleShape2D" id="RightUpper"]
+size = Vector2(68, 8)
+
+[sub_resource type="RectangleShape2D" id="RightPillar"]
+size = Vector2(21, 46)
+
+[sub_resource type="RectangleShape2D" id="HighLeftPlatform"]
+size = Vector2(149, 8)
+
+[sub_resource type="RectangleShape2D" id="HangingLeft"]
+size = Vector2(88, 8)
+
+[sub_resource type="RectangleShape2D" id="HangingMiddle"]
+size = Vector2(79, 8)
+
+[sub_resource type="RectangleShape2D" id="TreasureStep"]
+size = Vector2(37, 8)
+
+[sub_resource type="RectangleShape2D" id="TreasurePlatform"]
+size = Vector2(156, 8)
+
+[sub_resource type="RectangleShape2D" id="TreasureRight"]
+size = Vector2(136, 8)
+
+[sub_resource type="RectangleShape2D" id="HangingRight"]
+size = Vector2(77, 8)
+
+[sub_resource type="RectangleShape2D" id="BoundaryLeft"]
+size = Vector2(24, 724)
+
+[sub_resource type="RectangleShape2D" id="BoundaryRight"]
+size = Vector2(24, 724)
+
+[sub_resource type="RectangleShape2D" id="Entrance"]
+size = Vector2(32, 24)
+
+[sub_resource type="RectangleShape2D" id="Seam"]
+size = Vector2(68, 24)
+
+[node name="DungeonSection" type="Node2D"]
+script = ExtResource("2")
+
+[node name="Background" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("1")
+centered = false
+scale = Vector2(0.9429097605893186, 0.9433701657458563)
+
+[node name="Geometry" type="Node2D" parent="."]
+
+[node name="StartingFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(224, 403.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/StartingFloor"]
+shape = SubResource("StartingFloor")
+
+[node name="FirstDropWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(405.5, 436.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/FirstDropWall"]
+shape = SubResource("FirstDropWall")
+
+[node name="FirstLowerFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(481, 449)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/FirstLowerFloor"]
+shape = SubResource("FirstLowerFloor")
+
+[node name="SmallStep" type="StaticBody2D" parent="Geometry"]
+position = Vector2(570.5, 423.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/SmallStep"]
+shape = SubResource("SmallStep")
+
+[node name="FirstRiseWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(604.5, 404.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/FirstRiseWall"]
+shape = SubResource("FirstRiseWall")
+
+[node name="FirstRaisedFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(661.5, 362)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/FirstRaisedFloor"]
+shape = SubResource("FirstRaisedFloor")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="PitLeftWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(718.5, 431)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PitLeftWall"]
+shape = SubResource("PitLeftWall")
+
+[node name="PitFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(773, 474.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PitFloor"]
+shape = SubResource("PitFloor")
+
+[node name="PitStep" type="StaticBody2D" parent="Geometry"]
+position = Vector2(850, 427)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PitStep"]
+shape = SubResource("PitStep")
+
+[node name="PitRightWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(826.5, 460.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PitRightWall"]
+shape = SubResource("PitRightWall")
+
+[node name="MiddleRaisedFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(933, 362)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/MiddleRaisedFloor"]
+shape = SubResource("MiddleRaisedFloor")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="MiddleRiseWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(873.5, 397.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/MiddleRiseWall"]
+shape = SubResource("MiddleRiseWall")
+
+[node name="MiddleFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1053, 403.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/MiddleFloor"]
+shape = SubResource("MiddleFloor")
+
+[node name="MiddleDropWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1114.5, 434.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/MiddleDropWall"]
+shape = SubResource("MiddleDropWall")
+
+[node name="LowerMiddleFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1187.5, 447)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/LowerMiddleFloor"]
+shape = SubResource("LowerMiddleFloor")
+
+[node name="PoolLeftWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1240, 510.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PoolLeftWall"]
+shape = SubResource("PoolLeftWall")
+
+[node name="PoolFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1315.5, 555.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PoolFloor"]
+shape = SubResource("PoolFloor")
+
+[node name="PoolRightWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1390, 504)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/PoolRightWall"]
+shape = SubResource("PoolRightWall")
+
+[node name="RightLowerFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1533, 453.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RightLowerFloor"]
+shape = SubResource("RightLowerFloor")
+
+[node name="RightRaisedFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1591, 379)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RightRaisedFloor"]
+shape = SubResource("RightRaisedFloor")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="RightRiseWall" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1654.5, 419)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RightRiseWall"]
+shape = SubResource("RightRiseWall")
+
+[node name="RightStepFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1745, 426)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RightStepFloor"]
+shape = SubResource("RightStepFloor")
+
+[node name="RightFloor" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1922.5, 404.5)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RightFloor"]
+shape = SubResource("RightFloor")
+
+[node name="HighLeftPlatform" type="StaticBody2D" parent="Geometry"]
+position = Vector2(599.5, 271)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/HighLeftPlatform"]
+shape = SubResource("HighLeftPlatform")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="HangingLeft" type="StaticBody2D" parent="Geometry"]
+position = Vector2(789, 309)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/HangingLeft"]
+shape = SubResource("HangingLeft")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="HangingMiddle" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1191.5, 257)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/HangingMiddle"]
+shape = SubResource("HangingMiddle")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="TreasureStep" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1232.5, 309)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/TreasureStep"]
+shape = SubResource("TreasureStep")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="TreasurePlatform" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1328, 289)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/TreasurePlatform"]
+shape = SubResource("TreasurePlatform")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="TreasureRight" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1468, 312)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/TreasureRight"]
+shape = SubResource("TreasureRight")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="HangingRight" type="StaticBody2D" parent="Geometry"]
+position = Vector2(1864.5, 283)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/HangingRight"]
+shape = SubResource("HangingRight")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+
+[node name="Entrance" type="StaticBody2D" parent="Geometry"]
+position = Vector2(16, 405)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/Entrance"]
+shape = SubResource("Entrance")
+
+[node name="Seam" type="StaticBody2D" parent="Geometry"]
+position = Vector2(2014, 405)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/Seam"]
+shape = SubResource("Seam")
+
+[node name="EntranceArt" type="Sprite2D" parent="."]
+position = Vector2(0, 393)
+texture = ExtResource("1")
+centered = false
+region_enabled = true
+region_rect = Rect2(34, 417, 34, 21)
+scale = Vector2(0.941176, 1.142857)
+
+[node name="SeamArt" type="Sprite2D" parent="."]
+position = Vector2(1980, 393)
+texture = ExtResource("1")
+centered = false
+region_enabled = true
+region_rect = Rect2(34, 417, 72, 21)
+scale = Vector2(0.944444, 1.142857)
+[node name="LeftUpper" type="StaticBody2D" parent="Geometry"]
+position = Vector2(25.5, 332)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/LeftUpper"]
+shape = SubResource("LeftUpper")
+one_way_collision = true
+one_way_collision_margin = 3.0
+
+[node name="RightUpper" type="StaticBody2D" parent="Geometry"]
+position = Vector2(2014, 332)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Geometry/RightUpper"]
+shape = SubResource("RightUpper")
+one_way_collision = true
+one_way_collision_margin = 3.0
+[node name="WaterArea" parent="." instance=ExtResource("3_water")]
+position = Vector2(1315, 464)
+
+[node name="PitSpikes" parent="." instance=ExtResource("4_spikes")]
+position = Vector2(773, 454.5)
+scale = Vector2(0.857142857, 0.882352941)
+
+[node name="MiddleSpikes" parent="." instance=ExtResource("4_spikes")]
+position = Vector2(1168, 426)
+scale = Vector2(0.952380952, 0.882352941)
+
+[node name="RightSpikes" parent="." instance=ExtResource("4_spikes")]
+position = Vector2(1564, 364)
+scale = Vector2(0.5, 0.882352941)
+
+[node name="CageCrow1" parent="." instance=ExtResource("crow")]
+position = Vector2(306, 322)
+
+[node name="CageCrow2" parent="." instance=ExtResource("crow")]
+position = Vector2(894, 231)
+
+[node name="CageCrow3" parent="." instance=ExtResource("crow")]
+position = Vector2(1674, 319)
+
+[node name="ChestBackgroundRepair" type="Sprite2D" parent="."]
+z_index = 1
+texture_filter = 1
+position = Vector2(1314.415, 251.88)
+scale = Vector2(0.94290976, 0.94337016)
+texture = ExtResource("1")
+centered = false
+region_enabled = true
+region_rect = Rect2(1394, 232, 46, 35)
+region_filter_clip_enabled = true
+
+[node name="TaskBoxBackgroundRepair" type="Sprite2D" parent="."]
+z_index = 1
+texture_filter = 1
+position = Vector2(458.25414, 390.55525)
+scale = Vector2(0.94290976, 0.94337016)
+texture = ExtResource("1")
+centered = false
+region_enabled = true
+region_rect = Rect2(486, 360, 56, 51)
+region_filter_clip_enabled = true
