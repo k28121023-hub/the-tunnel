@@ -14,6 +14,8 @@ const WAVE := preload("res://scripts/cannon_wave.gd")
 const SLASH := preload("res://scripts/sword_slash.gd")
 var active_weapon := ""
 var cannon_wave: Node2D
+var cannon_cooldown := 0.0
+var cannon_input_buffer := 0.0
 var weapon_visual: Node2D
 var armor_visual: Sprite2D
 var swing: Node2D
@@ -131,6 +133,8 @@ func _ready() -> void:
 	add_child(touch_controls)
 
 func _physics_process(delta: float) -> void:
+	cannon_cooldown = maxf(0.0,cannon_cooldown-delta)
+	cannon_input_buffer = maxf(0.0,cannon_input_buffer-delta)
 	swing_remaining = maxf(0.0, swing_remaining - delta)
 	weapon_visual.scale.x = facing
 	weapon_visual.visible = swing_remaining == 0.0
@@ -170,6 +174,9 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("switch_weapon"):
 		switch_weapon()
 	if Input.is_action_just_pressed("attack"):
+		if active_weapon == "cannon": cannon_input_buffer = 0.22
+		attack_selected()
+	elif active_weapon == "cannon" and (Input.is_action_pressed("attack") or cannon_input_buffer > 0):
 		attack_selected()
 	if jump_buffer > 0.0 and coyote_time > 0.0 and not crouching:
 		jumping = true
@@ -441,8 +448,10 @@ func attack_selected() -> void:
 	if health <= 0 or not inventory.has(active_weapon):
 		return
 	if active_weapon == "cannon":
-		if is_instance_valid(cannon_wave):
+		if cannon_cooldown > 0:
 			return
+		cannon_cooldown = 0.2
+		cannon_input_buffer = 0.0
 		cannon_wave = Node2D.new()
 		cannon_wave.set_script(WAVE)
 		cannon_wave.shooter = self
@@ -490,5 +499,6 @@ func _hit_word_with_sword() -> void:
 		if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 			word.hit_by_weapon()
 			break
+
 
 
