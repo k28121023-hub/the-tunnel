@@ -98,6 +98,7 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	_position_mobile_hud()
 	if not enabled: return
 	var camera := get_viewport().get_camera_2d()
 	if camera == null: return
@@ -114,3 +115,21 @@ func _process(_delta: float) -> void:
 	if boss_room:
 		camera.position = Vector2(502,250+(bottom-top)/(2*zoom_value))
 
+
+func _position_mobile_hud() -> void:
+	var level := get_parent().get_parent()
+	var shift := clampf(get_viewport().get_visible_rect().size.y*0.075,48.0,72.0) if enabled else 0.0
+	var hud := level.get_node_or_null("HUD")
+	if hud != null:
+		for entry in [["Controls",16.0],["Status",44.0],["Health",74.0]]:
+			var label := hud.get_node_or_null(entry[0]) as Control
+			if label != null: label.position.y = entry[1]+shift
+	var tasks := level.get_node_or_null("TaskUI") as CanvasLayer
+	if tasks != null: tasks.offset.y = shift
+	if level.has_method("_continue_game") and is_instance_valid(level.health_label):
+		level.health_label.position.y = 64+shift
+		level.boss_label.position.y = 64+shift
+		if not level.cards.is_empty(): level.cards[0].position.y = 4+shift
+		get_parent().item_icons.position.y = 120+shift
+	else:
+		get_parent().item_icons.position.y = 126+shift
