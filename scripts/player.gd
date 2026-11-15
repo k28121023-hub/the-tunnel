@@ -396,10 +396,14 @@ func _attack(item_id: String, reach: float) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or enemy.is_queued_for_deletion() or not enemy.has_method("take_damage"):
 			continue
-		var offset: Vector2 = enemy.global_position - global_position
+		var aim: Vector2 = enemy.global_position
+		if enemy.has_method("get_damage_rect"):
+			var bounds: Rect2 = enemy.get_damage_rect()
+			aim = global_position.clamp(bounds.position, bounds.end)
+		var offset: Vector2 = aim - global_position
 		if offset.x * facing < 0.0 or absf(offset.y) > 72.0 or offset.length() > reach:
 			continue
-		var ray := PhysicsRayQueryParameters2D.create(global_position, enemy.global_position, 1, [get_rid(), enemy.get_rid()])
+		var ray := PhysicsRayQueryParameters2D.create(global_position, aim, 1, [get_rid(), enemy.get_rid()])
 		if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 			continue
 		if offset.length() < closest:

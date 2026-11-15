@@ -17,6 +17,10 @@ var attack_time := 0.0
 var cooldown := 0.8
 var struck := false
 var hurt_time := 0.0
+var health_bar_time := 0.0
+
+func get_damage_rect() -> Rect2:
+	return Rect2(global_position + Vector2(-18, -56), Vector2(36, 78))
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -45,8 +49,11 @@ func _physics_process(delta: float) -> void:
 	if health <= 0: return
 	cooldown = maxf(0, cooldown - delta)
 	hurt_time = maxf(0, hurt_time - delta)
+	health_bar_time = maxf(0, health_bar_time - delta)
 	velocity.y = minf(900, velocity.y + 1400 * delta)
-	if attack_time > 0:
+	if hurt_time > 0:
+		velocity.x = 0
+	elif attack_time > 0:
 		attack_time = maxf(0, attack_time - delta)
 		velocity.x = 0
 		if attack_time <= 0.2 and not struck:
@@ -88,11 +95,20 @@ func _physics_process(delta: float) -> void:
 func take_damage(amount: int) -> bool:
 	if health <= 0 or amount <= 0: return false
 	health = maxi(0, health - amount)
-	hurt_time = 0.18
+	hurt_time = 0.3
+	health_bar_time = 2.5
+	attack_time = 0.0
+	cooldown = maxf(cooldown, 0.6)
+	_update_visual()
+	queue_redraw()
 	if health == 0:
 		collision_layer = 0
+		remove_from_group("enemies")
+		set_physics_process(false)
 		defeated.emit()
-		queue_free()
+		var fade := create_tween()
+		fade.tween_property(sprite, "modulate:a", 0.0, 0.35)
+		fade.tween_callback(queue_free)
 	return true
 
 func _update_visual() -> void:
@@ -110,6 +126,9 @@ func _update_visual() -> void:
 	sprite.modulate = Color("ff9188") if hurt_time > 0 else Color.WHITE
 
 func _draw() -> void:
+	if health_bar_time > 0 and health > 0:
+		draw_rect(Rect2(-19,-65,38,7),Color("080d16"))
+		draw_rect(Rect2(-17,-63,34 * health / 2.0,3),Color("ff6555"))
 	if attack_time > 0 and attack_time <= 0.2:
 		var angle := 0.0 if facing > 0 else PI
 		draw_arc(Vector2.ZERO, 48, angle-0.65, angle+0.65, 18, Color(1,0.35,0.22,attack_time*3),2,true)

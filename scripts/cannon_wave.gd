@@ -31,10 +31,17 @@ func _physics_process(delta: float) -> void:
 		if not is_instance_valid(enemy) or enemy.is_queued_for_deletion() or not enemy.has_method("take_damage"):
 			continue
 		var closest := Geometry2D.get_closest_point_to_segment(enemy.global_position, start, end)
-		if enemy.global_position.distance_to(closest) > 14.0:
+		if enemy.has_method("get_damage_rect"):
+			var bounds: Rect2 = enemy.get_damage_rect().grow(5.0)
+			if start.y < bounds.position.y or start.y > bounds.end.y:
+				continue
+			if maxf(start.x,end.x) < bounds.position.x or minf(start.x,end.x) > bounds.end.x:
+				continue
+			closest = Vector2(clampf(start.x,bounds.position.x,bounds.end.x),start.y)
+		elif enemy.global_position.distance_to(closest) > 14.0:
 			continue
 		# Never hit an enemy on the far side of a wall, including the wave radius.
-		var sight := PhysicsRayQueryParameters2D.create(start, enemy.global_position, 1, [shooter.get_rid(), enemy.get_rid()])
+		var sight := PhysicsRayQueryParameters2D.create(start, closest, 1, [shooter.get_rid(), enemy.get_rid()])
 		if not get_world_2d().direct_space_state.intersect_ray(sight).is_empty():
 			continue
 		var distance := start.distance_to(closest)
