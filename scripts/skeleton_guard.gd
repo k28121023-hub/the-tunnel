@@ -2,6 +2,10 @@ extends CharacterBody2D
 signal defeated
 const PORTRAIT := preload("res://assets/antler_guard.png")
 const ART_SCALE := 78.0 / 1167.0
+const WALK_SHADER := preload("res://scripts/antler_walk.gdshader")
+const STRIDE_LENGTH := 52.0
+var walk_weight := 0.0
+var walk_material: ShaderMaterial
 var sprite: Sprite2D
 var player: CharacterBody2D
 var patrol_left := 280.0
@@ -31,6 +35,9 @@ func _ready() -> void:
 	sprite.centered = false
 	# Anchor the body and feet, rather than the wide sword's image bounds.
 	sprite.offset = Vector2(-830, -1167)
+	walk_material = ShaderMaterial.new()
+	walk_material.shader = WALK_SHADER
+	sprite.material = walk_material
 	add_child(sprite)
 	_update_visual()
 
@@ -67,9 +74,14 @@ func _physics_process(delta: float) -> void:
 				cooldown = 1.5
 				struck = false
 				velocity.x = 0
+	var previous_x := position.x
 	move_and_slide()
 	position.x = clampf(position.x, patrol_left, patrol_right)
-	phase += absf(velocity.x) * delta * 0.16
+	var distance := absf(position.x - previous_x)
+	var walking := is_on_floor() and attack_time <= 0 and distance > 0.01
+	walk_weight = move_toward(walk_weight, 1.0 if walking else 0.0, delta * 8)
+	if walking:
+		phase = fposmod(phase + distance / STRIDE_LENGTH * TAU, TAU)
 	_update_visual()
 	queue_redraw()
 
@@ -85,9 +97,12 @@ func take_damage(amount: int) -> bool:
 
 func _update_visual() -> void:
 	sprite.scale = Vector2(-facing, 1) * ART_SCALE
-	var walking := absf(velocity.x) > 1 and is_on_floor() and attack_time <= 0
-	sprite.position = Vector2(0, 22 - absf(sin(phase)) * (1.2 if walking else 0.0))
-	sprite.rotation = sin(phase) * 0.018 if walking else 0.0
+	walk_material.set_shader_parameter("phase", phase)
+	walk_material.set_shader_parameter("amount", walk_weight)
+	# Keep the head and sword stable: stepping comes from the legs, not rocking
+	# the entire portrait around its feet.
+	sprite.position = Vector2(0, 22 - absf(sin(phase * 2)) * 0.3 * walk_weight)
+	sprite.rotation = 0.0
 	if attack_time > 0:
 		var striking := attack_time <= 0.2
 		sprite.rotation = facing * (0.12 if striking else -0.06)
