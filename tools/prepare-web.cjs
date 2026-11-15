@@ -43,6 +43,17 @@ function prepare(directory) {
   const loader = fs.readFileSync(path.join(__dirname,'compressed-loader.js'),'utf8').replace('__COMPRESSED_FILES__',JSON.stringify(compressed));
   html = html.replace('<script src="'+engine+'.js"></script>','<script>'+loader+'</script>\n<script src="'+engine+'.js"></script>');
   if (!html.includes('installCompressedDownloads')) throw new Error('Compressed loader injection failed');
+  // Start the large downloads as soon as the HTML is parsed, instead of
+  // waiting for engine JS to finish loading and then calling fetch.
+  const splash = html.match(/id="status-splash"[^>]*src="([^"]+)"/);
+  const preloads = [
+    splash ? '<link rel="preload" href="'+splash[1]+'" as="image">' : '',
+    '<link rel="preload" href="'+engine+'.js" as="script">',
+    '<link rel="preload" href="'+engine+'.wasm.gz" as="fetch" crossorigin>',
+    '<link rel="preload" href="'+config.mainPack+'.gz" as="fetch" crossorigin>',
+  ].filter(Boolean).join('\n\t\t');
+  html = html.replace('</title>', '</title>\n\t\t'+preloads);
+  html = html.replace('id="status-splash"', 'id="status-splash" fetchpriority="high"');
   fs.writeFileSync(path.join(directory,'index.html'),html);
   fs.unlinkSync(htmlPath);
   for (const name of [...Object.keys(config.fileSizes),engine+'.js',config.mainPack]) {
