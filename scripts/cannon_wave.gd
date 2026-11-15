@@ -1,7 +1,7 @@
 extends Node2D
 var shooter: Node2D
 var direction := 1.0
-var remaining := 420.0
+var remaining := 1400.0
 const SPEED := 680.0
 
 func _ready() -> void:

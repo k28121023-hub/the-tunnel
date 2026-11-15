@@ -5,6 +5,8 @@ signal question_progress_changed(correct: int, total: int)
 
 const SECTION := preload("res://scenes/DungeonSection.tscn")
 const ENDING := preload("res://scenes/EndingSection.tscn")
+const SKELETON := preload("res://scripts/skeleton_guard.gd")
+var defeated_guards: Dictionary = {}
 const SECTION_WIDTH := 2048.0
 const ENDING_WIDTH := 768.0
 const GENERATE_AHEAD := 1000.0
@@ -93,6 +95,18 @@ func _ensure_section(index: int) -> void:
 	else:
 		highest_generated_index = maxi(highest_generated_index, index)
 		$WordTasks.configure_section(section, index)
+		for guard_slot in range(2):
+			var guard_id := "%d:%d" % [index, guard_slot]
+			if defeated_guards.has(guard_id): continue
+			var guard := CharacterBody2D.new()
+			guard.set_script(SKELETON)
+			guard.name = "SkeletonGuard%d" % guard_slot
+			guard.player = player
+			guard.patrol_left = 280.0 if guard_slot == 0 else 1010.0
+			guard.patrol_right = 365.0 if guard_slot == 0 else 1090.0
+			guard.position = Vector2((guard.patrol_left + guard.patrol_right) * 0.5, 370)
+			guard.defeated.connect(func(): defeated_guards[guard_id] = true)
+			section.add_child(guard)
 
 func _on_exit_reached() -> void:
 	if level_complete or correct_answers < total_questions or $WordTasks.completed < 20:
