@@ -1,4 +1,4 @@
-# The Tunnel
+# The Dungeon
 
 Godot 4.5.1 製作的鍵盤操作冒險遊戲，包含第二關死神戰與英文答題挑戰。
 
@@ -18,3 +18,4 @@ Godot 4.5.1 製作的鍵盤操作冒險遊戲，包含第二關死神戰與英�
 以 Godot 4.5.1 開啟 `project.godot`。主場景為第一關。
 推送至 `main` 後，GitHub Actions 會匯出單執行緒 Web 版本並發布至 GitHub Pages。
 儲存庫 Settings → Pages 的 Source 必須設為 GitHub Actions。
+

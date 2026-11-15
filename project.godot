@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="The Tunnel"
+config/name="The Dungeon"
 boot_splash/image="res://assets/the_tunnel_splash.png"
 boot_splash/bg_color=Color(0.055, 0.078, 0.118, 1)
 run/main_scene="res://scenes/dungeon_level_01.tscn"
@@ -73,3 +73,4 @@ restart={
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.02, 0.03, 0.04, 1)
+

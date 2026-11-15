@@ -107,7 +107,9 @@ func _cover_background_boxes(section: Node2D) -> void:
 	# Reuse clean regions of the existing background, as the original box repair
 	# already does. Only the old baked-in box art is covered, never the floors.
 	var repairs := [
-		[Rect2(182, 358, 35, 35), Vector2(269, 358)],
+		# Sample the same blue arch directly above this crate, not the dark wall
+		# to its right (which left a black rectangle behind the opened lid).
+		[Rect2(182, 358, 35, 35), Vector2(182, 357)],
 		[Rect2(227, 367, 29, 26), Vector2(269, 367)],
 		[Rect2(1077, 344, 47, 49), Vector2(1020, 344)],
 		[Rect2(1698, 381, 47, 35), Vector2(1770, 381)],
@@ -125,6 +127,11 @@ func _cover_background_boxes(section: Node2D) -> void:
 		repair.region_filter_clip_enabled = true
 		repair.position = destination.position
 		repair.scale = background.scale
+		if index == 0:
+			# Continue the immediately adjacent wall/arch column without importing
+			# an unrelated rectangular patch from elsewhere in the painting.
+			repair.region_rect.size.y = 1.0
+			repair.scale.y = destination.size.y
 		repair.z_index = 1
 		section.add_child(repair)
 
