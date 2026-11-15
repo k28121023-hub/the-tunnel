@@ -3,7 +3,7 @@ const RIPPLE := preload("res://scenes/RippleEffect.tscn")
 
 func _ready() -> void:
 	# Hard-edged procedural droplet, without external image assets.
-	var droplet := Image.create(7, 11, false, Image.FORMAT_RGBA8)
+	var droplet := Image.create_empty(7, 11, false, Image.FORMAT_RGBA8)
 	droplet.fill(Color.TRANSPARENT)
 	for y in range(1, 10):
 		var half_width := 0.5 + float(y) * 0.22 if y < 7 else 2.3 - float(y - 7) * 0.6

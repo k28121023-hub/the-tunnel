@@ -11,36 +11,73 @@ concurrency:
   group: github-pages
   cancel-in-progress: true
 
+env:
+  GODOT_VERSION: 4.5.1-stable
+  EMSCRIPTEN_VERSION: 4.0.10
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v6
-      - name: Install Godot 4.5.1 and Web export template
+
+      - uses: actions/cache@v4
+        id: template-cache
+        with:
+          path: build/templates/web_nothreads_release.zip
+          key: web-template-${{ env.GODOT_VERSION }}-em${{ env.EMSCRIPTEN_VERSION }}-${{ hashFiles('tools/web-template/custom.py', 'tools/web-template/build.sh') }}
+
+      - name: Build custom 2D web export template
+        if: steps.template-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          release=https://github.com/godotengine/godot-builds/releases/download/4.5.1-stable
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq pkg-config
+          python3 -m venv /tmp/scons-venv
+          /tmp/scons-venv/bin/pip install -q 'scons==4.8.1' zstandard
+          git clone --depth 1 --branch "$GODOT_VERSION" https://github.com/godotengine/godot.git /tmp/godot
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install "$EMSCRIPTEN_VERSION"
+          /tmp/emsdk/emsdk activate "$EMSCRIPTEN_VERSION"
+          export PATH="/tmp/scons-venv/bin:$PATH"
+          export GODOT_SRC=/tmp/godot
+          export EMSDK_DIR=/tmp/emsdk
+          export OUTPUT_ZIP="$GITHUB_WORKSPACE/build/templates/web_nothreads_release.zip"
+          bash tools/web-template/build.sh
+
+      - name: Install Godot editor and custom web template
+        run: |
+          set -euo pipefail
+          release=https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}
           curl -fL --retry 3 "$release/Godot_v4.5.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
-          unzip -q /tmp/godot.zip -d /tmp/godot
-          sudo install /tmp/godot/Godot_v4.5.1-stable_linux.x86_64 /usr/local/bin/godot
-          curl -fL --retry 3 "$release/Godot_v4.5.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          unzip -q /tmp/godot.zip -d /tmp/godot-editor
+          sudo install /tmp/godot-editor/Godot_v4.5.1-stable_linux.x86_64 /usr/local/bin/godot
+          template="$GITHUB_WORKSPACE/build/templates/web_nothreads_release.zip"
+          test -s "$template"
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
-          unzip -j /tmp/templates.tpz 'templates/web_nothreads_release.zip' -d "$HOME/.local/share/godot/export_templates/4.5.1.stable"
+          cp "$template" "$HOME/.local/share/godot/export_templates/4.5.1.stable/web_nothreads_release.zip"
+
       - name: Prepare compact UI font
         run: |
           python3 -m pip install 'fonttools==4.60.1'
           python3 tools/subset-ui-font.py
+
       - name: Import and export game
         run: |
+          set -euo pipefail
           godot --headless --editor --import --quit
           mkdir -p build/web
           godot --headless --export-release Web build/web/game.html
           node tools/prepare-web.cjs build/web
           cp loading-status.js build/web/loading-status.js
+          test -f build/web/sw.js
           touch build/web/.nojekyll
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -54,6 +91,3 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-
-
-
