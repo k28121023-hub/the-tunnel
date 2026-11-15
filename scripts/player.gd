@@ -124,6 +124,10 @@ func _ready() -> void:
 			event.physical_keycode = code
 			InputMap.action_add_event(action, event)
 
+	var touch_controls := CanvasLayer.new()
+	touch_controls.set_script(preload("res://scripts/touch_controls.gd"))
+	add_child(touch_controls)
+
 func _physics_process(delta: float) -> void:
 	swing_remaining = maxf(0.0, swing_remaining - delta)
 	weapon_visual.scale.x = facing
@@ -479,3 +483,4 @@ func _hit_word_with_sword() -> void:
 		if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 			word.hit_by_weapon()
 			break
+
