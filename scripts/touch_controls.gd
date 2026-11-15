@@ -104,9 +104,12 @@ func _process(_delta: float) -> void:
 	var size := get_viewport().get_visible_rect().size
 	var level := get_parent().get_parent()
 	var boss_room := level.has_method("_continue_game")
-	var zoom_value := (1.7 if boss_room else 2.3)*maxf(1.0,size.y/900.0)
+	# Fit the complete normal play area. Portrait height must never increase
+	# zoom, otherwise the sides disappear on narrow phones.
+	var top := 90.0
+	var bottom := 150.0
+	var world_size := Vector2(1004,500) if boss_room else Vector2(768,500)
+	var zoom_value := minf(size.x/world_size.x,maxf(150,size.y-top-bottom)/world_size.y)
 	camera.zoom = Vector2.ONE*zoom_value
 	if boss_room:
-		var half_width := size.x/(2*zoom_value)
-		camera.position = Vector2(clampf(get_parent().position.x,half_width,1004-half_width),300)
-
+		camera.position = Vector2(502,250+(bottom-top)/(2*zoom_value))
