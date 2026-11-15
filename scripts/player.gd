@@ -31,6 +31,8 @@ const SPEED := 240.0
 const JUMP_SPEED := -650.0
 const GRAVITY := 1400.0
 var jumping := false
+var touch_controls: CanvasLayer
+var touch_jump_boost := 0.0
 var cat_animation_time := 0.0
 var walk_phase := 0.0
 var walk_weight := 0.0
@@ -124,7 +126,7 @@ func _ready() -> void:
 			event.physical_keycode = code
 			InputMap.action_add_event(action, event)
 
-	var touch_controls := CanvasLayer.new()
+	touch_controls = CanvasLayer.new()
 	touch_controls.set_script(preload("res://scripts/touch_controls.gd"))
 	add_child(touch_controls)
 
@@ -155,7 +157,11 @@ func _physics_process(delta: float) -> void:
 		jumping = false
 		velocity.y = 0.0
 	else:
-		velocity.y = minf(velocity.y + GRAVITY * delta, 1000.0)
+		var gravity_scale := 1.0
+		if touch_controls.enabled and velocity.y < 0 and touch_jump_boost > 0 and Input.is_action_pressed("jump"):
+			gravity_scale = 0.55
+		touch_jump_boost = maxf(0.0,touch_jump_boost-delta)
+		velocity.y = minf(velocity.y + GRAVITY * gravity_scale * delta, 1000.0)
 	# Vertical input never sets vertical velocity. Every jump follows gravity.
 	var direction := Input.get_axis("move_left", "move_right")
 	velocity.x = direction * (SPEED * 0.3 if crouching else SPEED)
@@ -168,10 +174,11 @@ func _physics_process(delta: float) -> void:
 	if jump_buffer > 0.0 and coyote_time > 0.0 and not crouching:
 		jumping = true
 		velocity.y = JUMP_SPEED
+		touch_jump_boost = 0.22
 		jump_buffer = 0.0
 		coyote_time = 0.0
 	# A released key shortens the jump; holding it cannot restart or hover.
-	if Input.is_action_just_released("jump") and velocity.y < -300.0:
+	if not touch_controls.enabled and Input.is_action_just_released("jump") and velocity.y < -300.0:
 		velocity.y = -300.0
 	var previous_position := position
 	var fall_speed := velocity.y
@@ -483,4 +490,5 @@ func _hit_word_with_sword() -> void:
 		if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 			word.hit_by_weapon()
 			break
+
 

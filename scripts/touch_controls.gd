@@ -59,7 +59,7 @@ func _set_enabled(value: bool) -> void:
 	toggle.text = "隱藏按鈕" if value else "觸控"
 	var help := get_parent().get_parent().get_node_or_null("HUD/Controls") as Label
 	if help != null:
-		help.text = "▲ 跳躍 · ▼ 蹲下" if value else "A/D: Move | S: Crouch | W: Jump | Space: Attack | Q: Switch | R: Restart"
+		help.text = "▲ 輕點跳躍／按住跳更高 · ▼ 蹲下" if value else "A/D: Move | S: Crouch | W: Jump | Space: Attack | Q: Switch | R: Restart"
 	_layout()
 	if not value:
 		var level := get_parent().get_parent()
@@ -113,3 +113,4 @@ func _process(_delta: float) -> void:
 	camera.zoom = Vector2.ONE*zoom_value
 	if boss_room:
 		camera.position = Vector2(502,250+(bottom-top)/(2*zoom_value))
+
