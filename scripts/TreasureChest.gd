@@ -1,6 +1,7 @@
 extends Area2D
 signal opened
 const ITEMS := preload("res://scripts/box_items.gd")
+const LOS := preload("res://scripts/interact_los.gd")
 var manager: Node
 var used := false
 var lid: Sprite2D
@@ -40,8 +41,7 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if used or manager.stopped: return
 	if overlaps_body(manager.player) and manager.player.health > 0:
-		var ray := PhysicsRayQueryParameters2D.create(manager.player.global_position, global_position, 1, [manager.player.get_rid()])
-		if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
+		if not LOS.blocked(get_world_2d(), manager.player.global_position, global_position, [manager.player.get_rid()]):
 			open()
 
 func open() -> void:

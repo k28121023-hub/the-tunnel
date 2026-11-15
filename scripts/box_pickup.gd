@@ -1,6 +1,7 @@
 extends Area2D
 signal collected
 const ITEMS := preload("res://scripts/box_items.gd")
+const LOS := preload("res://scripts/interact_los.gd")
 var item_id := "sword"
 var box_id := ""
 var ready_to_collect := false
@@ -33,8 +34,7 @@ func _try_collect(body: Node2D) -> void:
 		return
 	if body != get_tree().current_scene.get_node_or_null("Player") or body.health <= 0:
 		return
-	var ray := PhysicsRayQueryParameters2D.create(body.global_position, global_position, 1, [body.get_rid()])
-	if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
+	if LOS.blocked(get_world_2d(), body.global_position, global_position, [body.get_rid()]):
 		return
 	consumed = true
 	get_tree().current_scene.get_node("WordTasks").collected_boxes[box_id] = true

@@ -109,7 +109,9 @@ func _cover_background_boxes(section: Node2D) -> void:
 	# Reuse clean regions of the existing background, as the original box repair
 	# already does. Only the old baked-in box art is covered, never the floors.
 	var repairs := [
-		# The first crate uses the original background; its nearby barrel stays intact.
+		# The first crate keeps its original background; cover the unused painted
+		# chest beside it so it is not mistaken for an interactive box.
+		[Rect2(228, 364, 36, 30), Vector2(228, 328)],
 		[Rect2(1077, 344, 47, 49), Vector2(1020, 344)],
 		[Rect2(1698, 381, 47, 35), Vector2(1770, 381)],
 	]

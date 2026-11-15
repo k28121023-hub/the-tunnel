@@ -1,5 +1,7 @@
 extends Node2D
 const TOKEN := preload("res://scenes/WordToken.tscn")
+const LOS := preload("res://scripts/interact_los.gd")
+const UI_FONT := preload("res://assets/fonts/ChineseUI.tres")
 @export var task_number := 1
 var opened := false
 const WORD_HALF_SIZE := Vector2(60, 18)
@@ -8,26 +10,45 @@ var solids: Array[Dictionary] = []
 var hazards: Array[Rect2] = []
 var reachable: Array[Vector2] = []
 var words_spawned := false
+var locked_hint: Label
 
 func _ready() -> void:
 	$Area2D.body_entered.connect(_on_body_entered)
+	locked_hint = Label.new()
+	locked_hint.visible = false
+	locked_hint.z_index = 20
+	locked_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	locked_hint.add_theme_font_override("font", UI_FONT)
+	locked_hint.add_theme_font_size_override("font_size", 14)
+	locked_hint.add_theme_color_override("font_color", Color(1, 0.9, 0.65))
+	locked_hint.add_theme_color_override("font_outline_color", Color(0.05, 0.07, 0.1))
+	locked_hint.add_theme_constant_override("outline_size", 6)
+	locked_hint.position = Vector2(-90, -52)
+	locked_hint.size = Vector2(180, 24)
+	add_child(locked_hint)
 
 func _physics_process(_delta: float) -> void:
 	if not opened:
+		var touching := false
 		for body in $Area2D.get_overlapping_bodies():
+			if body == get_tree().current_scene.get_node_or_null("Player"):
+				touching = true
 			_on_body_entered(body)
+		if not touching:
+			locked_hint.visible = false
 
 func _on_body_entered(body: Node2D) -> void:
 	var level := get_tree().current_scene
 	if opened or body != level.get_node("Player") or body.health <= 0 or not $Area2D.overlaps_body(body):
 		return
-	var ray := PhysicsRayQueryParameters2D.create(body.global_position, global_position, 1, [body.get_rid()])
-	if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
+	if LOS.blocked(get_world_2d(), body.global_position, global_position, [body.get_rid()]):
 		return
 	var manager = level.get_node("WordTasks")
 	# Tasks originate only from ordinary boxes; this chest handles their quiz.
 	if not manager.can_open_treasure(task_number):
+		_show_locked_hint(manager)
 		return
+	locked_hint.visible = false
 	opened = true
 	level.get_node("WordTasks").opened_chests[task_number] = true
 	var tween := create_tween()
@@ -48,6 +69,10 @@ func _spawn_words() -> void:
 	if options.is_empty():
 		return
 	var destinations := random_landings(options.size())
+	if destinations.size() != options.size():
+		# High zoom, a short viewport, or a mid-pan camera can reject every
+		# strict layout. Fall back to a looser arrangement before retrying.
+		destinations = _fallback_landings(options.size())
 	if destinations.size() != options.size():
 		# A very small or moving viewport may have too little safe space. Retry
 		# in the current view instead of placing words off-screen or in a wall.
@@ -156,12 +181,13 @@ func _visible_bounds() -> Rect2:
 	var end := inverse * (viewport_size - Vector2(16, 16))
 	return Rect2(start, end - start).grow_individual(-WORD_HALF_SIZE.x, -WORD_HALF_SIZE.y, -WORD_HALF_SIZE.x, -WORD_HALF_SIZE.y)
 
-func random_landings(count: int) -> Array[Vector2]:
+func random_landings(count: int, min_spread := 65.0, min_distance := WORD_DISTANCE) -> Array[Vector2]:
 	_read_terrain()
 	_find_reachable()
 	var bounds := _visible_bounds()
 	if reachable.is_empty() or not bounds.has_area():
 		return []
+	var neighbor_x := min_distance + 20.0
 	for layout in range(24):
 		var result: Array[Vector2] = []
 		for attempt in range(700):
@@ -182,7 +208,7 @@ func random_landings(count: int) -> Array[Vector2]:
 				continue
 			var separated := true
 			for other in result:
-				if point.distance_to(other) < WORD_DISTANCE or (absf(point.x - other.x) < 132.0 and absf(point.y - other.y) < 48.0):
+				if point.distance_to(other) < min_distance or (absf(point.x - other.x) < neighbor_x and absf(point.y - other.y) < 48.0):
 					separated = false
 					break
 			if separated:
@@ -193,11 +219,58 @@ func random_landings(count: int) -> Array[Vector2]:
 				for chosen in result:
 					min_y = minf(min_y, chosen.y)
 					max_y = maxf(max_y, chosen.y)
-				if count < 2 or max_y - min_y >= 65.0:
+				if count < 2 or max_y - min_y >= min_spread:
 					result.shuffle()
 					return result
 				break
 	return []
+
+func _show_locked_hint(manager: Node) -> void:
+	# The scroll is already flying in; the chest will open as soon as it arrives.
+	if manager.active_task == task_number and task_number > manager.completed:
+		locked_hint.visible = false
+		return
+	if task_number > manager.completed + 1:
+		locked_hint.text = "先完成前面的任務"
+	else:
+		locked_hint.text = "先打開木箱，取得任務"
+	locked_hint.visible = true
+
+func _try_add_landing(point: Vector2, slots: Array[Vector2], min_distance := 52.0) -> bool:
+	var bounds := _visible_bounds()
+	if bounds.has_area() and not bounds.grow(24.0).has_point(point):
+		return false
+	if not _clear_hud(point) or point.distance_to(global_position) > 480.0:
+		return false
+	if not _clear_rect(Rect2(point - WORD_HALF_SIZE, WORD_HALF_SIZE * 2.0)):
+		return false
+	var player := get_tree().current_scene.get_node_or_null("Player") as Node2D
+	if player != null and Rect2(point - WORD_HALF_SIZE, WORD_HALF_SIZE * 2.0).intersects(Rect2(player.global_position - Vector2(21, 28), Vector2(42, 56))):
+		return false
+	for other in slots:
+		if point.distance_to(other) < min_distance:
+			return false
+	slots.append(point)
+	return true
+
+func _fallback_landings(count: int) -> Array[Vector2]:
+	var relaxed := random_landings(count, 28.0, 76.0)
+	if relaxed.size() == count:
+		return relaxed
+	var slots: Array[Vector2] = []
+	var offsets: Array[Vector2] = [
+		Vector2(-100, -36), Vector2(100, -36), Vector2(-50, -78), Vector2(50, -78),
+		Vector2(0, -56), Vector2(-150, -20), Vector2(150, -20), Vector2(-70, -110),
+		Vector2(70, -110), Vector2(0, -100), Vector2(-180, -48), Vector2(180, -48),
+	]
+	for offset in offsets:
+		if _try_add_landing(global_position + offset, slots) and slots.size() == count:
+			return slots
+	for anchor in reachable:
+		for height in [24.0, 48.0, 72.0, 96.0]:
+			if _try_add_landing(anchor + Vector2(0, -height), slots, 64.0) and slots.size() == count:
+				return slots
+	return slots
 
 func _clear_hud(point: Vector2) -> bool:
 	var canvas := get_viewport().get_canvas_transform()

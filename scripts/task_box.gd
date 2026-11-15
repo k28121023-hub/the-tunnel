@@ -2,6 +2,7 @@ extends Area2D
 @export var task_number := 1
 var opened := false
 const PICKUP := preload("res://scripts/box_pickup.gd")
+const LOS := preload("res://scripts/interact_los.gd")
 var content := "task"
 var box_id := ""
 var slot := 0
@@ -29,8 +30,7 @@ func _on_body_entered(body: Node2D) -> void:
 	# Reject stale callbacks unless the actual player collider touches the box.
 	if not overlaps_body(body) or body.health <= 0:
 		return
-	var ray := PhysicsRayQueryParameters2D.create(body.global_position, global_position + Vector2(0, -3), 1, [body.get_rid()])
-	if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
+	if LOS.blocked(get_world_2d(), body.global_position, global_position + Vector2(0, -3), [body.get_rid()]):
 		return
 	var manager = get_tree().current_scene.get_node("WordTasks")
 	if opened:
