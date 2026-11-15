@@ -5,6 +5,7 @@ const ART_SCALE := 78.0 / 1167.0
 const WALK_SHADER := preload("res://scripts/antler_walk.gdshader")
 const STRIDE_LENGTH := 52.0
 const ATTACK_NOTICE_RANGE := 180.0
+const SWORD_WAVE := preload("res://scripts/demon_sword_wave.gd")
 var walk_weight := 0.0
 var walk_material: ShaderMaterial
 var sprite: Sprite2D
@@ -70,12 +71,18 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0
 		if attack_time <= 0.36 and not struck:
 			struck = true
+			var wave := Node2D.new()
+			wave.set_script(SWORD_WAVE)
+			wave.player = player
+			wave.direction = facing
+			get_parent().add_child(wave)
+			wave.global_position = global_position + Vector2(20*facing,-8)
 			if is_instance_valid(player) and player.health > 0:
 				var offset := player.global_position - global_position
 				if offset.x * facing >= 0 and absf(offset.x) < 56 and absf(offset.y) < 32:
 					var ray := PhysicsRayQueryParameters2D.create(global_position, player.global_position, 1, [get_rid(), player.get_rid()])
 					if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
-						player.enemy_contact(self, 15)
+						player.enemy_contact(self, 25)
 	else:
 		if position.x <= patrol_left: facing = 1
 		elif position.x >= patrol_right: facing = -1
@@ -155,7 +162,6 @@ func _draw() -> void:
 		draw_rect(Rect2(-17,-63,34 * health / 2.0,3),Color("ff6555"))
 	if attack_time > 0.25 and attack_time <= 0.5:
 		var angle := 0.0 if facing > 0 else PI
-		draw_arc(Vector2(0,-8), 48, angle-0.9, angle+0.8, 24, Color(1,0.35,0.22,0.8),3,true)
-
-
-
+		draw_arc(Vector2(0,-8), 55, angle-1.3, angle+1.1, 32, Color(1,0.1,0.02,0.3),18,true)
+		draw_arc(Vector2(0,-8), 55, angle-1.3, angle+1.1, 32, Color(1,0.5,0.08,0.9),8,true)
+		draw_arc(Vector2(0,-8), 55, angle-1.3, angle+1.1, 32, Color(1,0.96,0.75),3,true)
