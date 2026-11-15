@@ -26,6 +26,10 @@ jobs:
           curl -fL --retry 3 "$release/Godot_v4.5.1-stable_export_templates.tpz" -o /tmp/templates.tpz
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
           unzip -j /tmp/templates.tpz 'templates/web_nothreads_release.zip' -d "$HOME/.local/share/godot/export_templates/4.5.1.stable"
+      - name: Prepare compact UI font
+        run: |
+          python3 -m pip install 'fonttools==4.60.1'
+          python3 tools/subset-ui-font.py
       - name: Import and export game
         run: |
           godot --headless --editor --import --quit
@@ -50,5 +54,6 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
 
 
