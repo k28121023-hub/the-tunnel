@@ -12,7 +12,9 @@ func _on_exit_entered(body: Node2D) -> void:
 		return
 	if body.health <= 0 or not $Exit.overlaps_body(body):
 		return
-	if level.get_node("WordTasks").completed < 20:
+	# Use the current word-set size, not a leftover 20-task constant.
+	var tasks := level.get_node("WordTasks")
+	if tasks.completed < tasks.task_count():
 		return
 	entered = true
 	exit_reached.emit()
