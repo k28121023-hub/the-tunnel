@@ -30,8 +30,8 @@ jobs:
         run: |
           godot --headless --editor --import --quit
           mkdir -p build/web
-          godot --headless --export-release Web "build/web/game-${GITHUB_SHA}.html"
-          cp "build/web/game-${GITHUB_SHA}.html" build/web/index.html
+          godot --headless --export-release Web build/web/game.html
+          node tools/prepare-web.cjs build/web
           cp loading-status.js build/web/loading-status.js
           touch build/web/.nojekyll
       - uses: actions/upload-pages-artifact@v4
@@ -50,4 +50,5 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
 
