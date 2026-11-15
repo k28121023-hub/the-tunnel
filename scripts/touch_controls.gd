@@ -4,8 +4,8 @@ var enabled := false
 var pad := Node2D.new()
 var buttons: Array[TouchScreenButton] = []
 var toggle := Button.new()
-const ACTIONS := ["move_left", "move_right", "crouch", "jump", "attack", "switch_weapon", "restart"]
-const LABELS := ["◀", "▶", "蹲下", "跳躍", "攻擊", "換武器", "重生"]
+const ACTIONS := ["move_left", "move_right", "crouch", "jump", "attack"]
+const LABELS := ["◀", "▶", "▼", "▲", "攻擊"]
 
 func _ready() -> void:
 	layer = 5
@@ -34,7 +34,7 @@ func _ready() -> void:
 		label.size = Vector2(84,40)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size",20)
+		label.add_theme_font_size_override("font_size",26)
 		label.add_theme_color_override("font_color",Color.WHITE)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(label)
@@ -59,15 +59,23 @@ func _set_enabled(value: bool) -> void:
 	toggle.text = "隱藏按鈕" if value else "觸控"
 	var help := get_parent().get_parent().get_node_or_null("HUD/Controls") as Label
 	if help != null:
-		help.text = "觸控操作｜橫放螢幕視野較佳" if value else "A/D: Move | S: Crouch | W: Jump | Space: Attack | Q: Switch | R: Restart"
+		help.text = "▲ 跳躍 · ▼ 蹲下" if value else "A/D: Move | S: Crouch | W: Jump | Space: Attack | Q: Switch | R: Restart"
 	_layout()
+	if not value:
+		var level := get_parent().get_parent()
+		var camera := get_viewport().get_camera_2d()
+		if camera != null and level.has_method("_layout"):
+			level._layout()
+		elif camera != null:
+			camera.zoom = Vector2.ONE*1.5
 
 func _layout() -> void:
 	var size := get_viewport().get_visible_rect().size
-	var factor := clampf(size.y/648.0,1.0,1.7)
-	var margin := 64.0*factor
-	var spacing := 100.0*factor
-	var positions := [Vector2(margin,size.y-margin),Vector2(margin+spacing,size.y-margin),Vector2(margin,size.y-margin-spacing),Vector2(size.x-margin,size.y-margin),Vector2(size.x-margin-spacing,size.y-margin),Vector2(size.x-margin,size.y-margin-spacing),Vector2(size.x-margin-spacing,size.y-margin-spacing)]
+	var factor := clampf(size.y/800.0,1.0,1.65)
+	var gap := 66.0*factor
+	var center := Vector2(122.0*factor,size.y-120.0*factor)
+	# A low, familiar D-pad: up jumps, down crouches.
+	var positions := [center+Vector2(-gap,0),center+Vector2(gap,0),center+Vector2(0,gap),center+Vector2(0,-gap),Vector2(size.x-66.0*factor,size.y-66.0*factor)]
 	for i in range(buttons.size()):
 		buttons[i].position = positions[i]
 		buttons[i].scale = Vector2.ONE*factor
@@ -87,4 +95,18 @@ func _notification(what: int) -> void:
 func _exit_tree() -> void:
 	_release()
 
+
+
+func _process(_delta: float) -> void:
+	if not enabled: return
+	var camera := get_viewport().get_camera_2d()
+	if camera == null: return
+	var size := get_viewport().get_visible_rect().size
+	var level := get_parent().get_parent()
+	var boss_room := level.has_method("_continue_game")
+	var zoom_value := (1.7 if boss_room else 2.3)*maxf(1.0,size.y/900.0)
+	camera.zoom = Vector2.ONE*zoom_value
+	if boss_room:
+		var half_width := size.x/(2*zoom_value)
+		camera.position = Vector2(clampf(get_parent().position.x,half_width,1004-half_width),300)
 
