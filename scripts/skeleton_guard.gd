@@ -69,7 +69,7 @@ func _physics_process(delta: float) -> void:
 	elif attack_time > 0:
 		attack_time = maxf(0, attack_time - delta)
 		velocity.x = 0
-		if attack_time <= 0.36 and not struck:
+		if attack_time <= 0.43 and not struck:
 			struck = true
 			var wave := Node2D.new()
 			wave.set_script(SWORD_WAVE)
@@ -142,15 +142,27 @@ func _update_visual() -> void:
 	sprite.rotation = 0.0
 	blade.rotation = 0.0
 	if attack_time > 0:
-		if attack_time > 0.5:
-			blade.rotation = lerpf(0.0,1.8,(0.9-attack_time)/0.4)
-			sprite.position.x = -facing * 2
-		elif attack_time > 0.25:
-			blade.rotation = lerpf(1.8,-0.6,(0.5-attack_time)/0.25)
-			sprite.position.x = facing * 4
+		if attack_time > 0.54:
+			var t := clampf((0.9-attack_time)/0.3,0,1)
+			var weight := 1.0-pow(1.0-t,3)
+			blade.rotation = 2.0*weight
+			sprite.rotation = -facing*0.13*weight
+			sprite.position += Vector2(-facing*4*weight,2*weight)
+		elif attack_time > 0.40:
+			var t := (0.54-attack_time)/0.14
+			var weight := t*t
+			blade.rotation = lerpf(2.0,-0.85,weight)
+			sprite.rotation = facing*lerpf(-0.13,0.16,weight)
+			sprite.position += Vector2(facing*lerpf(-4,9,weight),2)
+		elif attack_time > 0.31:
+			blade.rotation = -0.85
+			sprite.rotation = facing*0.16
+			sprite.position += Vector2(facing*9,2)
 		else:
-			blade.rotation = lerpf(-0.6,0.0,(0.25-attack_time)/0.25)
-			sprite.position.x = facing * 4 * attack_time / 0.25
+			var t := attack_time/0.31
+			blade.rotation = -0.85*t
+			sprite.rotation = facing*0.16*t
+			sprite.position += Vector2(facing*9*t,2*t)
 	sprite.modulate = Color("ff9188") if hurt_time > 0 else Color.WHITE
 
 func _draw() -> void:
@@ -160,8 +172,24 @@ func _draw() -> void:
 	if health_bar_time > 0 and health > 0:
 		draw_rect(Rect2(-19,-65,38,7),Color("080d16"))
 		draw_rect(Rect2(-17,-63,34 * health / 2.0,3),Color("ff6555"))
-	if attack_time > 0.25 and attack_time <= 0.5:
-		var angle := 0.0 if facing > 0 else PI
-		draw_arc(Vector2(0,-8), 55, angle-1.3, angle+1.1, 32, Color(1,0.1,0.02,0.3),18,true)
-		draw_arc(Vector2(0,-8), 55, angle-1.3, angle+1.1, 32, Color(1,0.5,0.08,0.9),8,true)
-		draw_arc(Vector2(0,-8), 55, angle-1.3, angle+1.1, 32, Color(1,0.96,0.75),3,true)
+	if attack_time > 0.54:
+		var charge := clampf((0.9-attack_time)/0.36,0,1)
+		for i in range(8):
+			var angle := i*TAU/8 + charge*2
+			var point := Vector2(facing*12,-15)+Vector2.from_angle(angle)*(26-18*charge)
+			draw_line(point,point+Vector2.from_angle(angle)*4,Color(1,0.4,0.15,charge),1.5,true)
+	if attack_time > 0.24 and attack_time <= 0.5:
+		draw_set_transform(Vector2(0,-8),0,Vector2(facing,1))
+		var progress := clampf((0.5-attack_time)/0.10,0,1)
+		var fade := minf(1,(attack_time-0.24)/0.12)
+		var tip := lerpf(-1.5,1.3,progress)
+		for i in range(5):
+			var tint: Color = [Color(1,0.03,0.15,0.16),Color(1,0.12,0.25,0.35),Color(1,0.4,0.08,0.8),Color(1,0.85,0.4,0.95),Color(1,1,0.95,1)][i]
+			tint.a *= fade
+			SWORD_WAVE.ribbon(self,Vector2.ZERO,55+i,float([28,18,10,5,1.5][i]),tip-2.1,tip,tint)
+		if attack_time <= 0.43:
+			var flash := clampf((attack_time-0.30)/0.13,0,1)
+			for i in range(8):
+				var axis := Vector2.from_angle(i*TAU/8)
+				draw_line(Vector2(30,0)+axis*4,Vector2(30,0)+axis*(10+18*flash),Color(1,0.9,0.6,flash),2,true)
+		draw_set_transform(Vector2.ZERO)
