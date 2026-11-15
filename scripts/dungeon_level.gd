@@ -37,6 +37,8 @@ func _ready() -> void:
 	_update_stream()
 	camera.position = Vector2(player.position.x + 100.0, 341.5)
 	camera.reset_smoothing()
+	_warmup_draw()
+	_prebuild_ahead()
 
 ## Call once per correctly answered question, using its stable unique ID.
 ## Wrong answers do not call this method; repeated IDs do not increase progress.
@@ -78,8 +80,12 @@ func _update_stream() -> void:
 	if ending_index >= 0:
 		checkpoint_index = mini(checkpoint_index, ending_index)
 	player.spawn_point = Vector2(checkpoint_index * SECTION_WIDTH + 100.0, 360.0)
-	status.text = "ANSWERS %d / %d  |  %s" % [correct_answers, total_questions,
+	var line := "ANSWERS %d / %d  |  %s" % [correct_answers, total_questions,
 		"ROOM OPEN -> Enter the gold doorway for LEVEL 2" if ending_index >= 0 else "Explore the dungeon"]
+	# Rewriting Label.text every physics frame forces a reshape; with the
+	# fallback text server that hitch shows up as visible stutter.
+	if status.text != line:
+		status.text = line
 
 func _ensure_section(index: int) -> void:
 	if index < 0 or sections.has(index) or (ending_index >= 0 and index > ending_index):
@@ -140,3 +146,23 @@ func _process(delta: float) -> void:
 	shake_remaining = maxf(0.0, shake_remaining - delta)
 	var strength := 5.0 * shake_remaining / 0.25
 	camera.offset = Vector2(randf_range(-strength, strength), randf_range(-strength, strength)) if shake_remaining > 0.0 else Vector2.ZERO
+
+func _warmup_draw() -> void:
+	# Compile the guard walk shader and upload shared combat textures before
+	# the first streamed section would otherwise hitch mid-stride.
+	var sprite := Sprite2D.new()
+	sprite.texture = preload("res://assets/antler_guard.png")
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://scripts/antler_walk.gdshader")
+	sprite.material = material
+	sprite.position = Vector2(-10000, -10000)
+	sprite.modulate.a = 0.0
+	add_child(sprite)
+	get_tree().create_timer(0.4).timeout.connect(sprite.queue_free)
+
+func _prebuild_ahead() -> void:
+	# Build the next dungeon section after the first frames so walking into
+	# it does not pay the full instantiate cost on the same frame as input.
+	await get_tree().create_timer(0.35).timeout
+	if ending_index < 0 and not sections.has(highest_generated_index + 1):
+		_ensure_section(highest_generated_index + 1)

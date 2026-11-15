@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## Real multi-touch buttons allow holding movement while jumping or attacking.
 var enabled := false
+var _hud_key := ""
 var pad := Node2D.new()
 var buttons: Array[TouchScreenButton] = []
 const ACTIONS := ["move_left", "move_right", "crouch", "jump", "attack"]
@@ -52,6 +53,7 @@ func _ready() -> void:
 func _set_enabled(value: bool) -> void:
 	_release()
 	enabled = value
+	_hud_key = ""
 	pad.visible = value
 	_layout()
 	if not value:
@@ -109,8 +111,13 @@ func _process(_delta: float) -> void:
 
 
 func _position_mobile_hud() -> void:
+	var size := get_viewport().get_visible_rect().size
+	var shift := size.y*0.22 if enabled else 0.0
+	var key := "%s:%.1f:%.1fx%.1f" % [enabled, shift, size.x, size.y]
+	if key == _hud_key:
+		return
+	_hud_key = key
 	var level := get_parent().get_parent()
-	var shift := get_viewport().get_visible_rect().size.y*0.22 if enabled else 0.0
 	var hud := level.get_node_or_null("HUD")
 	if hud != null:
 		for entry in [["Status",16.0],["Health",46.0]]:

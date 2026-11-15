@@ -60,5 +60,6 @@ func _draw() -> void:
 		draw_line(point,point+Vector2(9+18*t,-sin(i*2.4)*4),tint,1.2,true)
 		if i%3 == 0:
 			var size := (1-t)*3.0
-			draw_colored_polygon(PackedVector2Array([point+Vector2(-size*2,0),point+Vector2(0,-size),point+Vector2(size*2,0),point+Vector2(0,size)]),Color(1,0.95,0.75,(1-t)*fade))
+			if size > 0.2:
+				draw_colored_polygon(PackedVector2Array([point+Vector2(-size*2,0),point+Vector2(0,-size),point+Vector2(size*2,0),point+Vector2(0,size)]),Color(1,0.95,0.75,(1-t)*fade))
 	draw_set_transform(Vector2.ZERO)

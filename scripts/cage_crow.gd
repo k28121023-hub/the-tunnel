@@ -15,6 +15,7 @@ var hit_this_flight := false
 var animation_time := 0.0
 var facing := 1.0
 var player: Node2D
+var perched_drawn := false
 var health := 1
 
 func take_damage(amount: int) -> bool:
@@ -35,7 +36,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	animation_time += delta
-	queue_redraw()
+	if state != State.PERCHED or not perched_drawn:
+		queue_redraw()
+		perched_drawn = state == State.PERCHED
 	var level := get_tree().current_scene
 	if not is_instance_valid(player):
 		player = level.get_node_or_null("Player")
@@ -49,6 +52,7 @@ func _physics_process(delta: float) -> void:
 				if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 					state = State.WARNING
 					countdown = 0.3
+					perched_drawn = false
 		State.WARNING:
 			countdown -= delta
 			if not active:
@@ -104,7 +108,7 @@ func _draw() -> void:
 	var ink := Color(0.045, 0.055, 0.09)
 	var feather := Color(0.13, 0.17, 0.23)
 	draw_colored_polygon(PackedVector2Array([Vector2(-6, 1), Vector2(-15, 5), Vector2(-11, -2)]), feather)
-	draw_colored_polygon(PackedVector2Array([Vector2(-5, 0), Vector2(-15, -5 + flap), Vector2(-4, -3)]), feather)
+	draw_colored_polygon(PackedVector2Array([Vector2(-5, 0), Vector2(-15, -5 + clampf(flap, -8.0, 8.0)), Vector2(-4, -3)]), feather)
 	draw_colored_polygon(PackedVector2Array([Vector2(-4, -3), Vector2(4, -4), Vector2(7, 2), Vector2(1, 6), Vector2(-7, 3)]), ink)
 	draw_circle(Vector2(5, -5), 4.5, ink)
 	draw_colored_polygon(PackedVector2Array([Vector2(8, -6), Vector2(14, -3), Vector2(8, -2)]), Color(0.32, 0.36, 0.4))

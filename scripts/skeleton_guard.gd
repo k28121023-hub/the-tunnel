@@ -21,6 +21,7 @@ var cooldown := 0.8
 var struck := false
 var hurt_time := 0.0
 var health_bar_time := 0.0
+var drawing := false
 
 func get_damage_rect() -> Rect2:
 	return Rect2(global_position + Vector2(-18, -56), Vector2(36, 78))
@@ -53,6 +54,8 @@ func _ready() -> void:
 	blade.uv = outline
 	var points := PackedVector2Array()
 	for point in outline: points.append(point - Vector2(610,690))
+	# Counter-clockwise winding; a clockwise outline fails canvas triangulation.
+	points.reverse()
 	blade.polygon = points
 	blade.position = Vector2(610,690) + sprite.offset
 	sprite.add_child(blade)
@@ -111,7 +114,10 @@ func _physics_process(delta: float) -> void:
 	if walking:
 		phase = fposmod(phase + distance / STRIDE_LENGTH * TAU, TAU)
 	_update_visual()
-	queue_redraw()
+	var needs_draw := attack_time > 0.0 or health_bar_time > 0.0
+	if needs_draw or drawing:
+		queue_redraw()
+	drawing = needs_draw
 
 func take_damage(amount: int) -> bool:
 	if health <= 0 or amount <= 0: return false
@@ -121,7 +127,10 @@ func take_damage(amount: int) -> bool:
 	attack_time = 0.0
 	cooldown = maxf(cooldown, 0.6)
 	_update_visual()
-	queue_redraw()
+	var needs_draw := attack_time > 0.0 or health_bar_time > 0.0
+	if needs_draw or drawing:
+		queue_redraw()
+	drawing = needs_draw
 	if health == 0:
 		collision_layer = 0
 		remove_from_group("enemies")
