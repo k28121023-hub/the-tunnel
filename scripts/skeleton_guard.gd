@@ -4,6 +4,7 @@ const PORTRAIT := preload("res://assets/antler_guard.png")
 const ART_SCALE := 78.0 / 1167.0
 const WALK_SHADER := preload("res://scripts/antler_walk.gdshader")
 const STRIDE_LENGTH := 52.0
+const ATTACK_NOTICE_RANGE := 180.0
 var walk_weight := 0.0
 var walk_material: ShaderMaterial
 var sprite: Sprite2D
@@ -86,12 +87,14 @@ func _physics_process(delta: float) -> void:
 		velocity.x = facing * 48
 		if is_instance_valid(player) and player.health > 0 and cooldown <= 0:
 			var offset := player.global_position - global_position
-			if absf(offset.x) < 52 and absf(offset.y) < 30:
-				facing = -1 if offset.x < 0 else 1
-				attack_time = 0.9
-				cooldown = 1.5
-				struck = false
-				velocity.x = 0
+			if absf(offset.x) < ATTACK_NOTICE_RANGE and absf(offset.y) < 65:
+				var sight := PhysicsRayQueryParameters2D.create(global_position, player.global_position, 1, [get_rid(), player.get_rid()])
+				if get_world_2d().direct_space_state.intersect_ray(sight).is_empty():
+					facing = -1 if offset.x < 0 else 1
+					attack_time = 0.9
+					cooldown = 1.8
+					struck = false
+					velocity.x = 0
 	var previous_x := position.x
 	move_and_slide()
 	position.x = clampf(position.x, patrol_left, patrol_right)
@@ -144,6 +147,9 @@ func _update_visual() -> void:
 	sprite.modulate = Color("ff9188") if hurt_time > 0 else Color.WHITE
 
 func _draw() -> void:
+	if attack_time > 0.5:
+		draw_line(Vector2(0,-72),Vector2(0,-63),Color("ffcc62"),3,true)
+		draw_circle(Vector2(0,-59),1.8,Color("ffcc62"))
 	if health_bar_time > 0 and health > 0:
 		draw_rect(Rect2(-19,-65,38,7),Color("080d16"))
 		draw_rect(Rect2(-17,-63,34 * health / 2.0,3),Color("ff6555"))
