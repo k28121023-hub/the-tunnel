@@ -359,7 +359,8 @@ func _update_items() -> void:
 		child.queue_free()
 	if not active_weapon.is_empty():
 		var held := ITEMS.sprite_for(active_weapon, 38.0)
-		held.position = Vector2(18, -2)
+		# Lift the sword so its grip meets the raised front paw.
+		held.position = Vector2(18, -14 if active_weapon == "sword" else -2)
 		weapon_visual.add_child(held)
 
 func enemy_contact(enemy: Node2D, amount: int) -> void:
@@ -440,7 +441,8 @@ func attack_selected() -> void:
 		swing = Node2D.new()
 		swing.z_index = 7
 		swing.scale.x = facing
-		swing.position.y = 9.0 if crouching else 0.0
+		# Rotate around the same hand used by the resting sword.
+		swing.position = Vector2(18 * facing, 7.0 if crouching else -2.0)
 		add_child(swing)
 		var blade := ITEMS.sprite_for("sword", 62.0)
 		blade.position = Vector2(0, -25)
