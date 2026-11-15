@@ -1,5 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 [ext_resource type="Script" path="res://scripts/word_token.gd" id="1"]
+[sub_resource type="CanvasItemMaterial" id="Unshaded"]
+light_mode = 1
 [sub_resource type="RectangleShape2D" id="Hit"]
 size = Vector2(64, 20)
 [node name="WordToken" type="Area2D"]
@@ -11,14 +13,17 @@ script = ExtResource("1")
 shape = SubResource("Hit")
 [node name="Background" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-34, -12, 34, -12, 34, 12, -34, 12)
-color = Color(0.08, 0.12, 0.17, 0.95)
+color = Color(0.025, 0.04, 0.065, 1)
 [node name="Label" type="Label" parent="."]
+material = SubResource("Unshaded")
 offset_left = -34.0
 offset_top = -12.0
 offset_right = 34.0
 offset_bottom = 12.0
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(1, 0.88, 0.55, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
 horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
