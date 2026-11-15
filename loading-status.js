@@ -25,7 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (progress.hasAttribute('value') && total > 1) {
       label.textContent = loaded >= total
         ? '下載完成，正在啟動遊戲…'
-        : `正在下載遊戲 ${Math.floor(loaded/total*100)}%（${(loaded/1048576).toFixed(1)} / ${(total/1048576).toFixed(1)} MB）`;
+        : `正在載入／解壓遊戲 ${Math.floor(loaded/total*100)}%`;
     } else {
       label.textContent = '正在準備遊戲，首次載入需要較久時間…';
     }
@@ -35,3 +35,4 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, 500);
 });
+

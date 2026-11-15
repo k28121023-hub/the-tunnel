@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const zlib = require('node:zlib');
 function prepare(directory) {
   const htmlPath = path.join(directory, 'game.html');
   let html = fs.readFileSync(htmlPath, 'utf8');
@@ -29,6 +30,19 @@ function prepare(directory) {
   config.mainPack = names[source+'.pck'];
   config.fileSizes = Object.fromEntries(Object.entries(config.fileSizes).map(([name,size]) => [names[name] || name,size]));
   html = html.replace(/const GODOT_CONFIG = (\{[^\n]+\});/, 'const GODOT_CONFIG = '+JSON.stringify(config)+';');
+  const compressed = {};
+  for (const name of Object.keys(config.fileSizes)) {
+    if (!/\.(wasm|pck)$/.test(name)) continue;
+    const original = fs.readFileSync(path.join(directory,name));
+    const zipped = zlib.gzipSync(original,{level:9});
+    if (!zlib.gunzipSync(zipped).equals(original)) throw new Error('Compression validation failed');
+    fs.writeFileSync(path.join(directory,name+'.gz'),zipped);
+    compressed[name] = original.length;
+    console.log(name+': '+original.length+' -> '+zipped.length+' bytes');
+  }
+  const loader = fs.readFileSync(path.join(__dirname,'compressed-loader.js'),'utf8').replace('__COMPRESSED_FILES__',JSON.stringify(compressed));
+  html = html.replace('<script src="'+engine+'.js"></script>','<script>'+loader+'</script>\n<script src="'+engine+'.js"></script>');
+  if (!html.includes('installCompressedDownloads')) throw new Error('Compressed loader injection failed');
   fs.writeFileSync(path.join(directory,'index.html'),html);
   fs.unlinkSync(htmlPath);
   for (const name of [...Object.keys(config.fileSizes),engine+'.js',config.mainPack]) {
@@ -39,3 +53,4 @@ function prepare(directory) {
 }
 module.exports = prepare;
 if (require.main === module) prepare(process.argv[2] || 'build/web');
+
