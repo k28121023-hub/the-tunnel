@@ -1,5 +1,8 @@
 extends CharacterBody2D
 signal defeated
+const PORTRAIT := preload("res://assets/antler_guard.png")
+const ART_SCALE := 78.0 / 1167.0
+var sprite: Sprite2D
 var player: CharacterBody2D
 var patrol_left := 280.0
 var patrol_right := 365.0
@@ -22,6 +25,14 @@ func _ready() -> void:
 	shape.size = Vector2(20, 44)
 	hit.shape = shape
 	add_child(hit)
+	sprite = Sprite2D.new()
+	sprite.texture = PORTRAIT
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.centered = false
+	# Anchor the body and feet, rather than the wide sword's image bounds.
+	sprite.offset = Vector2(-830, -1167)
+	add_child(sprite)
+	_update_visual()
 
 func _physics_process(delta: float) -> void:
 	if health <= 0: return
@@ -59,6 +70,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	position.x = clampf(position.x, patrol_left, patrol_right)
 	phase += absf(velocity.x) * delta * 0.16
+	_update_visual()
 	queue_redraw()
 
 func take_damage(amount: int) -> bool:
@@ -71,45 +83,20 @@ func take_damage(amount: int) -> bool:
 		queue_free()
 	return true
 
-func bone(a: Vector2, b: Vector2, color: Color, width := 3.0) -> void:
-	draw_line(a, b, Color("18202b"), width + 2, true)
-	draw_line(a, b, color, width, true)
+func _update_visual() -> void:
+	sprite.scale = Vector2(-facing, 1) * ART_SCALE
+	var walking := absf(velocity.x) > 1 and is_on_floor() and attack_time <= 0
+	sprite.position = Vector2(0, 22 - absf(sin(phase)) * (1.2 if walking else 0.0))
+	sprite.rotation = sin(phase) * 0.018 if walking else 0.0
+	if attack_time > 0:
+		var striking := attack_time <= 0.2
+		sprite.rotation = facing * (0.12 if striking else -0.06)
+		sprite.position.x = facing * (5.0 if striking else -2.0)
+	sprite.modulate = Color("ff9188") if hurt_time > 0 else Color.WHITE
 
 func _draw() -> void:
-	draw_set_transform(Vector2.ZERO, 0, Vector2(facing, 1))
-	var ivory := Color("fff0d0") if hurt_time <= 0 else Color("ff8e82")
-	var stride := sin(phase) * 5 if attack_time <= 0 else 0.0
-	# Articulated legs, pelvis, spine and ribs.
-	bone(Vector2(-4,7), Vector2(-6-stride,15), ivory)
-	bone(Vector2(-6-stride,15), Vector2(-7+stride,21), ivory)
-	bone(Vector2(4,7), Vector2(6+stride,15), ivory)
-	bone(Vector2(6+stride,15), Vector2(8-stride,21), ivory)
-	bone(Vector2(-7+stride,21),Vector2(-2+stride,21),ivory)
-	bone(Vector2(8-stride,21),Vector2(13-stride,21),ivory)
-	bone(Vector2(-6,6),Vector2(6,6),ivory,4)
-	bone(Vector2(0,-12),Vector2(0,6),ivory)
-	for y in [-8,-3,2]:
-		bone(Vector2(-7,y-2),Vector2(0,y),ivory,2)
-		bone(Vector2(0,y),Vector2(7,y-2),ivory,2)
-	bone(Vector2(-7,-9),Vector2(-12,0),ivory)
-	bone(Vector2(-12,0),Vector2(-9,6),ivory)
-	var hand := Vector2(15,-3)
-	if attack_time > 0:
-		hand = Vector2(10,-16) if attack_time > 0.2 else Vector2(23,0)
-	bone(Vector2(7,-9),hand,ivory)
-	# Skull, dark sockets, nose and teeth.
-	draw_circle(Vector2(0,-18),10,Color("18202b"))
-	draw_circle(Vector2(0,-18),8.5,ivory)
-	draw_rect(Rect2(-5,-15,10,7),ivory)
-	draw_circle(Vector2(-3,-19),2.4,Color("141a22"))
-	draw_circle(Vector2(4,-19),2.4,Color("141a22"))
-	draw_circle(Vector2(1,-15),1.3,Color("141a22"))
-	for x in [-3,0,3]: draw_line(Vector2(x,-11),Vector2(x,-8),Color("5b5550"),1)
-	# Short steel sword and brass guard, attached to the hand.
-	var angle := 1.1 if attack_time > 0 and attack_time <= 0.2 else -0.25
-	draw_set_transform(Vector2(hand.x * facing, hand.y), angle * facing, Vector2(facing,1))
-	bone(Vector2(0,4),Vector2(0,-4),Color("8c5934"),3)
-	draw_colored_polygon(PackedVector2Array([Vector2(-3,-5),Vector2(-2,-23),Vector2(0,-29),Vector2(3,-23),Vector2(3,-5)]),Color("e0f3ff"))
-	draw_line(Vector2(0,-6),Vector2(0,-24),Color("718da6"),1)
-	bone(Vector2(-6,-4),Vector2(6,-4),Color("ecc474"),2)
-	draw_set_transform(Vector2.ZERO)
+	if attack_time > 0 and attack_time <= 0.2:
+		var angle := 0.0 if facing > 0 else PI
+		draw_arc(Vector2.ZERO, 48, angle-0.65, angle+0.65, 18, Color(1,0.35,0.22,attack_time*3),2,true)
+
+
