@@ -5,6 +5,15 @@ const PICKUP := preload("res://scripts/box_pickup.gd")
 var content := "task"
 var box_id := ""
 var slot := 0
+var open_lid_y := -17.0
+
+func align_with_background_crate() -> void:
+	# Cover only the original wooden crate, leaving all surrounding scenery intact.
+	$BoxBody.position = Vector2(-16, -19)
+	$BoxBody.scale = Vector2(0.67, 0.8)
+	$Lid.position = Vector2(-16, -19)
+	$Lid.scale = Vector2(0.67, 0.6)
+	open_lid_y = -26.0
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
@@ -31,7 +40,7 @@ func _on_body_entered(body: Node2D) -> void:
 	manager.opened_boxes[box_id] = true
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property($Lid, "rotation", -0.65, 0.2)
-	tween.tween_property($Lid, "position:y", -17.0, 0.2)
+	tween.tween_property($Lid, "position:y", open_lid_y, 0.2)
 	if content != "task":
 		tween.chain().tween_callback(_spawn_pickup)
 
