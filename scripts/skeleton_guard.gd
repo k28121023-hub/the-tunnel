@@ -7,6 +7,7 @@ const STRIDE_LENGTH := 52.0
 var walk_weight := 0.0
 var walk_material: ShaderMaterial
 var sprite: Sprite2D
+var blade: Polygon2D
 var player: CharacterBody2D
 var patrol_left := 280.0
 var patrol_right := 365.0
@@ -43,6 +44,16 @@ func _ready() -> void:
 	walk_material.shader = WALK_SHADER
 	sprite.material = walk_material
 	add_child(sprite)
+	blade = Polygon2D.new()
+	blade.texture = PORTRAIT
+	blade.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var outline := PackedVector2Array([Vector2(0,1080),Vector2(300,1010),Vector2(500,860),Vector2(580,775),Vector2(630,665),Vector2(550,640),Vector2(500,735),Vector2(400,830),Vector2(200,960),Vector2(0,1035)])
+	blade.uv = outline
+	var points := PackedVector2Array()
+	for point in outline: points.append(point - Vector2(610,690))
+	blade.polygon = points
+	blade.position = Vector2(610,690) + sprite.offset
+	sprite.add_child(blade)
 	_update_visual()
 
 func _physics_process(delta: float) -> void:
@@ -56,7 +67,7 @@ func _physics_process(delta: float) -> void:
 	elif attack_time > 0:
 		attack_time = maxf(0, attack_time - delta)
 		velocity.x = 0
-		if attack_time <= 0.2 and not struck:
+		if attack_time <= 0.36 and not struck:
 			struck = true
 			if is_instance_valid(player) and player.health > 0:
 				var offset := player.global_position - global_position
@@ -77,7 +88,7 @@ func _physics_process(delta: float) -> void:
 			var offset := player.global_position - global_position
 			if absf(offset.x) < 52 and absf(offset.y) < 30:
 				facing = -1 if offset.x < 0 else 1
-				attack_time = 0.65
+				attack_time = 0.9
 				cooldown = 1.5
 				struck = false
 				velocity.x = 0
@@ -119,18 +130,26 @@ func _update_visual() -> void:
 	# the entire portrait around its feet.
 	sprite.position = Vector2(0, 22 - absf(sin(phase * 2)) * 0.3 * walk_weight)
 	sprite.rotation = 0.0
+	blade.rotation = 0.0
 	if attack_time > 0:
-		var striking := attack_time <= 0.2
-		sprite.rotation = facing * (0.12 if striking else -0.06)
-		sprite.position.x = facing * (5.0 if striking else -2.0)
+		if attack_time > 0.5:
+			blade.rotation = lerpf(0.0,1.8,(0.9-attack_time)/0.4)
+			sprite.position.x = -facing * 2
+		elif attack_time > 0.25:
+			blade.rotation = lerpf(1.8,-0.6,(0.5-attack_time)/0.25)
+			sprite.position.x = facing * 4
+		else:
+			blade.rotation = lerpf(-0.6,0.0,(0.25-attack_time)/0.25)
+			sprite.position.x = facing * 4 * attack_time / 0.25
 	sprite.modulate = Color("ff9188") if hurt_time > 0 else Color.WHITE
 
 func _draw() -> void:
 	if health_bar_time > 0 and health > 0:
 		draw_rect(Rect2(-19,-65,38,7),Color("080d16"))
 		draw_rect(Rect2(-17,-63,34 * health / 2.0,3),Color("ff6555"))
-	if attack_time > 0 and attack_time <= 0.2:
+	if attack_time > 0.25 and attack_time <= 0.5:
 		var angle := 0.0 if facing > 0 else PI
-		draw_arc(Vector2.ZERO, 48, angle-0.65, angle+0.65, 18, Color(1,0.35,0.22,attack_time*3),2,true)
+		draw_arc(Vector2(0,-8), 48, angle-0.9, angle+0.8, 24, Color(1,0.35,0.22,0.8),3,true)
+
 
 
