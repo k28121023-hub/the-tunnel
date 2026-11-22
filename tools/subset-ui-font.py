@@ -42,9 +42,23 @@ for folder in ('scripts', 'scenes'):
     for source in (root / folder).rglob('*'):
         if source.suffix in ('.gd', '.tscn', '.tres'):
             characters.update(map(ord, source.read_text(encoding='utf-8-sig')))
+# Only the active export set (data/word_set.json), not every set under
+# tools/word_sets/, so the root font stays limited to the original glyphs.
+word_set = root / 'data/word_set.json'
+if word_set.exists():
+    characters.update(map(ord, word_set.read_text(encoding='utf-8-sig')))
 font = TTFont(font_path)
 before_size = font_path.stat().st_size
 original_map = font.getBestCmap()
+# Word-set CJK (and any other non-ASCII source chars) must exist in the
+# committed font; silently dropping them would ship tofu on the new set.
+missing_from_font = characters.difference(original_map).difference(ENGINE_CHARS)
+# ASCII control chars from source files can appear in strings; ignore those
+# already covered by the 32-126 range plus common whitespace.
+missing_from_font = {cp for cp in missing_from_font if cp > 127}
+if missing_from_font:
+    glyphs = ', '.join(f'U+{cp:04X} {chr(cp)}' for cp in sorted(missing_from_font))
+    raise SystemExit(f'Font is missing required UI characters: {glyphs}')
 required = characters.intersection(original_map)
 if 'fvar' in font:
     font = instantiateVariableFont(font, {'wght': 500}, inplace=False)

@@ -1,0 +1,85 @@
+{
+  "id": "travel",
+  "words": [
+    {
+      "en": "luggage",
+      "zh": "行李"
+    },
+    {
+      "en": "ticket",
+      "zh": "票"
+    },
+    {
+      "en": "timetable",
+      "zh": "時刻表"
+    },
+    {
+      "en": "check in",
+      "zh": "報到"
+    },
+    {
+      "en": "station",
+      "zh": "車站"
+    },
+    {
+      "en": "expo",
+      "zh": "博覽會"
+    },
+    {
+      "en": "ferry",
+      "zh": "渡輪"
+    },
+    {
+      "en": "taxi",
+      "zh": "計程車"
+    },
+    {
+      "en": "wharf",
+      "zh": "碼頭"
+    },
+    {
+      "en": "conference",
+      "zh": "會議室"
+    },
+    {
+      "en": "exhibition",
+      "zh": "展覽"
+    },
+    {
+      "en": "approximately",
+      "zh": "大約"
+    },
+    {
+      "en": "complimentary",
+      "zh": "免費的"
+    },
+    {
+      "en": "depart",
+      "zh": "離開"
+    },
+    {
+      "en": "board",
+      "zh": "登上"
+    },
+    {
+      "en": "home goods",
+      "zh": "居家用品"
+    },
+    {
+      "en": "catering",
+      "zh": "餐飲業"
+    },
+    {
+      "en": "application",
+      "zh": "申請"
+    },
+    {
+      "en": "resume",
+      "zh": "履歷"
+    },
+    {
+      "en": "pickup point",
+      "zh": "上車地點"
+    }
+  ]
+}

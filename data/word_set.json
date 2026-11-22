@@ -1,0 +1,49 @@
+{
+  "id": "business",
+  "words": [
+    {
+      "en": "Human resource department",
+      "zh": "人資部門"
+    },
+    {
+      "en": "shipping department",
+      "zh": "運送部門"
+    },
+    {
+      "en": "customer service",
+      "zh": "顧客服務"
+    },
+    {
+      "en": "management",
+      "zh": "管理"
+    },
+    {
+      "en": "IT department",
+      "zh": "資訊科技部門"
+    },
+    {
+      "en": "Marketing department",
+      "zh": "行銷部門"
+    },
+    {
+      "en": "finance department",
+      "zh": "財務部門"
+    },
+    {
+      "en": "research and development",
+      "zh": "研發部門"
+    },
+    {
+      "en": "get used to",
+      "zh": "習慣"
+    },
+    {
+      "en": "take one's word",
+      "zh": "接受某人說法"
+    },
+    {
+      "en": "fill sb in on",
+      "zh": "向某人提供"
+    }
+  ]
+}

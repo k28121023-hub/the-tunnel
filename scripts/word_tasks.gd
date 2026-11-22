@@ -1,19 +1,9 @@
 extends Node
 const BOX := preload("res://scenes/TaskBox.tscn")
 const CHEST := preload("res://scenes/WordChest.tscn")
-const TASKS := {
-	1: {"task": 1, "meaning": "人資部門", "answer": "Human resource department"},
-	2: {"task": 2, "meaning": "運送部門", "answer": "shipping department"},
-	3: {"task": 3, "meaning": "顧客服務", "answer": "customer service"},
-	4: {"task": 4, "meaning": "管理", "answer": "management"},
-	5: {"task": 5, "meaning": "資訊科技部門", "answer": "IT department"},
-	6: {"task": 6, "meaning": "行銷部門", "answer": "Marketing department"},
-	7: {"task": 7, "meaning": "財務部門", "answer": "finance department"},
-	8: {"task": 8, "meaning": "研發部門", "answer": "research and development"},
-	9: {"task": 9, "meaning": "習慣", "answer": "get used to"},
-	10: {"task": 10, "meaning": "接受某人說法", "answer": "take one's word"},
-	11: {"task": 11, "meaning": "向某人提供", "answer": "fill sb in on"}
-}
+const WORD_SET_RESOURCE := preload("res://data/word_set.json")
+# Filled in _init from the active word-set file selected at export time.
+var TASKS: Dictionary = {}
 var active_task := 0
 var completed := 0
 var used_words: Dictionary = {}
@@ -25,6 +15,30 @@ var next_weapon_reward := "sword"
 ## Including the English chest at x=1335.5 and section seams, boxes are
 ## at least 475 world pixels apart. Background repairs remove unused crates.
 const BOX_POSITIONS := [Vector2(200, 380), Vector2(675, 345)]
+
+
+func _init() -> void:
+	TASKS = _load_tasks(WORD_SET_RESOURCE)
+
+
+func _load_tasks(resource: Resource) -> Dictionary:
+	var loaded: Dictionary = {}
+	var payload: Variant = resource.data if resource is JSON else null
+	var words: Array = []
+	if payload is Dictionary and payload.has("words"):
+		words = payload["words"]
+	elif payload is Array:
+		words = payload
+	assert(not words.is_empty(), "word_set.json has no words")
+	for index in range(words.size()):
+		var entry: Dictionary = words[index]
+		loaded[index + 1] = {
+			"task": index + 1,
+			"meaning": String(entry["zh"]),
+			"answer": String(entry["en"]),
+		}
+	return loaded
+
 
 func random_weapon() -> String:
 	return ["sword", "cannon"].pick_random()
@@ -159,4 +173,3 @@ func submit(word: String, number: int) -> bool:
 		ui.show_result("Wrong", false)
 		get_parent().get_node("Player").take_damage(25, true)
 	return true
-

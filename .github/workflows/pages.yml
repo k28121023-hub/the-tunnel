@@ -58,20 +58,15 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
           cp "$template" "$HOME/.local/share/godot/export_templates/4.5.1.stable/web_nothreads_release.zip"
 
-      - name: Prepare compact UI font
-        run: |
-          python3 -m pip install 'fonttools==4.60.1'
-          python3 tools/subset-ui-font.py
-
-      - name: Import and export game
+      - name: Export root and /travel/ web builds
         run: |
           set -euo pipefail
-          godot --headless --editor --import --quit
-          mkdir -p build/web
-          godot --headless --export-release Web build/web/game.html
-          node tools/prepare-web.cjs build/web
-          cp loading-status.js build/web/loading-status.js
+          python3 -m pip install 'fonttools==4.60.1'
+          bash tools/export-web-variants.sh
+          test -f build/web/index.html
           test -f build/web/sw.js
+          test -f build/web/travel/index.html
+          test -f build/web/travel/sw.js
           touch build/web/.nojekyll
 
       - uses: actions/upload-pages-artifact@v4
