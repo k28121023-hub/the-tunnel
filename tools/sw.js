@@ -44,6 +44,17 @@ function isHashedAsset(url) {
   return HASHED.test(url.pathname);
 }
 
+// Hashed engine-* files in the parent directory (e.g. /the-tunnel/engine-...
+// requested from /the-tunnel/travel/) are identical across word-set builds.
+// Serve them cache-first, searching all caches so a prior root visit hits.
+function isParentEngine(url) {
+  if (url.origin !== self.location.origin) return false;
+  const parent = new URL('..', self.registration.scope).pathname;
+  if (!url.pathname.startsWith(parent)) return false;
+  const rest = url.pathname.slice(parent.length);
+  return /^engine-[a-f0-9][^/]*$/i.test(rest);
+}
+
 function isDocument(request, url) {
   if (request.destination === 'document') return true;
   const path = url.pathname;
@@ -79,10 +90,10 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   let url;
   try { url = new URL(request.url); } catch { return; }
-  if (!isOwnAsset(url)) return;
   if (NEVER_CACHE.test(url.pathname)) return;
+  if (!isOwnAsset(url) && !isParentEngine(url)) return;
 
-  if (isHashedAsset(url)) {
+  if (isHashedAsset(url) || isParentEngine(url)) {
     event.respondWith(cacheFirst(request));
     return;
   }

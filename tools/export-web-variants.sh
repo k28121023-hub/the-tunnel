@@ -44,6 +44,7 @@ cp -a tools/word_sets/business.json "$WORKDIR/word_set.default.json"
 export_one() {
   local set_id="$1"
   local dest="$2"
+  local share_engine="${3:-}"
   echo "=== Exporting word set: $set_id -> $dest ==="
   cp -a "tools/word_sets/${set_id}.json" "$WORD_SET"
   cp -a "$WORKDIR/NotoSansTC.full.ttf" "$FONT"
@@ -52,19 +53,39 @@ export_one() {
   mkdir -p "$dest"
   "$GODOT" --headless --path "$ROOT" --editor --import --quit
   "$GODOT" --headless --path "$ROOT" --export-release Web "$dest/game.html"
-  node tools/prepare-web.cjs "$dest"
+  if [[ -n "$share_engine" ]]; then
+    node tools/prepare-web.cjs "$dest" --share-engine="$share_engine"
+    # Engine binaries live in the parent Pages directory; drop the copy.
+    rm -f "$dest"/engine-*
+  else
+    node tools/prepare-web.cjs "$dest"
+  fi
   test -f "$dest/index.html"
   test -f "$dest/sw.js"
   test -f "$dest/loading-status.js"
 }
 
 export_one business "$WORKDIR/business"
-export_one travel "$WORKDIR/travel"
+export_one travel "$WORKDIR/travel" "../"
 
 rm -rf build/web
 mkdir -p build/web/travel
 cp -a "$WORKDIR/business/." build/web/
 cp -a "$WORKDIR/travel/." build/web/travel/
 touch build/web/.nojekyll
+
+# Travel must point at the shared root engine and must not ship a second copy.
+grep -q 'href="../engine-' build/web/travel/index.html
+grep -q 'src="../engine-' build/web/travel/index.html
+shopt -s nullglob
+root_wasm=(build/web/engine-*.wasm.gz)
+if [[ ${#root_wasm[@]} -lt 1 ]]; then
+  echo "root engine wasm.gz missing" >&2
+  exit 1
+fi
+if compgen -G 'build/web/travel/engine-*' >/dev/null; then
+  echo "travel/ still contains engine files; they should be shared from ../" >&2
+  exit 1
+fi
 
 echo "Exported root (business) and /travel/ (travel) into build/web"

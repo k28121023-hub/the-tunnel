@@ -2,7 +2,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
-function prepare(directory) {
+function prepare(directory, options = {}) {
+  const shareEngine = options.shareEngine || '';
+  const sharePrefix = shareEngine ? (shareEngine.endsWith('/') ? shareEngine : shareEngine + '/') : '';
   const htmlPath = path.join(directory, 'game.html');
   let html = fs.readFileSync(htmlPath, 'utf8');
   const loadingStatusSrc = path.join(__dirname, '..', 'loading-status.js');
@@ -50,16 +52,36 @@ function prepare(directory) {
     compressed[name] = original.length;
     console.log(name+': '+original.length+' -> '+zipped.length+' bytes');
   }
-  const loader = fs.readFileSync(path.join(__dirname,'compressed-loader.js'),'utf8').replace('__COMPRESSED_FILES__',JSON.stringify(compressed));
-  html = html.replace('<script src="'+engine+'.js"></script>','<script>'+loader+'</script>\n<script src="'+engine+'.js"></script>');
+  // A subpath build (e.g. /travel/) can reuse the parent directory's hashed
+  // engine files so a player who already loaded the root game does not
+  // download the same 5 MiB wasm again.
+  let compressedFiles = compressed;
+  const engineHref = sharePrefix + engine;
+  if (sharePrefix) {
+    for (const file of [engine+'.js', engine+'.wasm.gz', engine+'.wasm', engine+'.audio.position.worklet.js', engine+'.audio.worklet.js']) {
+      html = html.split(file).join(sharePrefix + file);
+    }
+    config.executable = engineHref;
+    config.fileSizes = Object.fromEntries(Object.entries(config.fileSizes).map(([name, size]) => [
+      name.startsWith(engine) ? sharePrefix + name : name,
+      size,
+    ]));
+    compressedFiles = Object.fromEntries(Object.entries(compressed).map(([name, size]) => [
+      name.startsWith(engine) ? sharePrefix + name : name,
+      size,
+    ]));
+    html = html.replace(/const GODOT_CONFIG = (\{[^\n]+\});/, 'const GODOT_CONFIG = '+JSON.stringify(config)+';');
+  }
+  const loader = fs.readFileSync(path.join(__dirname,'compressed-loader.js'),'utf8').replace('__COMPRESSED_FILES__',JSON.stringify(compressedFiles));
+  html = html.replace('<script src="'+engineHref+'.js"></script>','<script>'+loader+'</script>\n<script src="'+engineHref+'.js"></script>');
   if (!html.includes('installCompressedDownloads')) throw new Error('Compressed loader injection failed');
   // Start the large downloads as soon as the HTML is parsed, instead of
   // waiting for engine JS to finish loading and then calling fetch.
   const splash = html.match(/id="status-splash"[^>]*src="([^"]+)"/);
   const preloads = [
     splash ? '<link rel="preload" href="'+splash[1]+'" as="image">' : '',
-    '<link rel="preload" href="'+engine+'.js" as="script">',
-    '<link rel="preload" href="'+engine+'.wasm.gz" as="fetch" crossorigin>',
+    '<link rel="preload" href="'+engineHref+'.js" as="script">',
+    '<link rel="preload" href="'+engineHref+'.wasm.gz" as="fetch" crossorigin>',
     '<link rel="preload" href="'+config.mainPack+'.gz" as="fetch" crossorigin>',
   ].filter(Boolean).join('\n\t\t');
   html = html.replace('</title>', '</title>\n\t\t'+preloads);
@@ -72,14 +94,14 @@ function prepare(directory) {
   const swSource = fs.readFileSync(path.join(__dirname,'sw.js'),'utf8').replaceAll('__CACHE_VERSION__', cacheVersion);
   fs.writeFileSync(path.join(directory,'sw.js'), swSource);
   const precache = [
-    engine+'.js',
-    engine+'.wasm.gz',
+    engineHref+'.js',
+    engineHref+'.wasm.gz',
     config.mainPack+'.gz',
-    engine+'.audio.worklet.js',
-    engine+'.audio.position.worklet.js',
+    engineHref+'.audio.worklet.js',
+    engineHref+'.audio.position.worklet.js',
     'loading-status.js',
     splash ? splash[1] : '',
-  ].filter((name) => name && fs.existsSync(path.join(directory, name)));
+  ].filter((name) => name && (name.includes('..') || fs.existsSync(path.join(directory, name))));
   const swBootstrap = [
     '<script>',
     '(function(){',
@@ -123,18 +145,26 @@ function prepare(directory) {
 
   fs.writeFileSync(path.join(directory,'index.html'),html);
   fs.unlinkSync(htmlPath);
-  const required = [...Object.keys(config.fileSizes),engine+'.js',config.mainPack];
-  for (const worklet of [engine+'.audio.worklet.js', engine+'.audio.position.worklet.js']) {
-    if (fs.existsSync(path.join(directory, worklet))) required.push(worklet);
+  const required = [...Object.keys(config.fileSizes), engineHref+'.js', config.mainPack];
+  for (const worklet of [engineHref+'.audio.worklet.js', engineHref+'.audio.position.worklet.js']) {
+    if (worklet.includes('..') || fs.existsSync(path.join(directory, worklet))) required.push(worklet);
     else console.warn('Missing audio worklet, it will 404 at runtime: '+worklet);
   }
   for (const name of required) {
-    if (!name || !fs.existsSync(path.join(directory,name))) throw new Error('Missing published asset: '+name);
+    if (!name || name.includes('..')) continue;
+    if (!fs.existsSync(path.join(directory,name))) throw new Error('Missing published asset: '+name);
   }
   if (!fs.existsSync(path.join(directory,'sw.js'))) throw new Error('Service worker was not written');
   console.log(JSON.stringify({engine,mainPack:config.mainPack,fileSizes:config.fileSizes,cacheVersion},null,2));
   return config;
 }
 module.exports = prepare;
-if (require.main === module) prepare(process.argv[2] || 'build/web');
+if (require.main === module) {
+  const directory = process.argv[2] || 'build/web';
+  let shareEngine = '';
+  for (const arg of process.argv.slice(3)) {
+    if (arg.startsWith('--share-engine=')) shareEngine = arg.slice('--share-engine='.length);
+  }
+  prepare(directory, { shareEngine });
+}
 
