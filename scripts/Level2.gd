@@ -254,8 +254,8 @@ func _update_hud() -> void:
 			status_text = "武器：%s（Space 攻擊%s）" % [weapon_name, switch_hint]
 			status_color = Color("9be7ff")
 		elif weapon_lost_notice:
-			status_text = "武器已遺失！請從寶箱重新拿取"
-			status_color = Color("ff8c69")
+			# After a boss hit, show no weapon-loss notice in the status area.
+			status_text = ""
 		else:
 			status_text = "目前無武器，請打開寶箱拿取"
 			status_color = Color("ffd166")
