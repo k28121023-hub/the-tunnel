@@ -62,6 +62,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m pip install 'fonttools==4.60.1'
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq brotli
           bash tools/export-web-variants.sh
           test -f build/web/index.html
           test -f build/web/sw.js

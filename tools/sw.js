@@ -67,8 +67,10 @@ async function cacheFirst(request) {
   if (cached) return cached;
   const fresh = await fetch(request);
   if (fresh && fresh.ok) {
-    const cache = await caches.open(CACHE_VERSION);
-    await cache.put(request, fresh.clone());
+    try {
+      const cache = await caches.open(CACHE_VERSION);
+      await cache.put(request, fresh.clone());
+    } catch (_) { /* GitHub Pages / truncated body can fail the put */ }
   }
   return fresh;
 }

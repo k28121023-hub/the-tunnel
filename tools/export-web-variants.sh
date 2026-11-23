@@ -83,11 +83,26 @@ if [[ ${#root_wasm[@]} -lt 1 ]]; then
   echo "root engine wasm.gz missing" >&2
   exit 1
 fi
+root_br=(build/web/engine-*.wasm.br)
+if [[ ${#root_br[@]} -lt 1 ]]; then
+  echo "root engine wasm.br missing" >&2
+  exit 1
+fi
+if ! compgen -G 'build/web/asset-*.brotli-dec.wasm.gz' >/dev/null; then
+  echo "root brotli decoder wasm.gz missing" >&2
+  exit 1
+fi
 for variant in travel food; do
   grep -q 'href="../engine-' "build/web/${variant}/index.html"
   grep -q 'src="../engine-' "build/web/${variant}/index.html"
+  grep -q '../engine-[0-9a-f]*\.wasm\.br' "build/web/${variant}/index.html"
+  grep -q '../asset-[0-9a-f]*\.brotli-dec\.wasm\.gz' "build/web/${variant}/index.html"
   if compgen -G "build/web/${variant}/engine-*" >/dev/null; then
     echo "${variant}/ still contains engine files; they should be shared from ../" >&2
+    exit 1
+  fi
+  if compgen -G "build/web/${variant}/asset-*.brotli-dec.wasm.gz" >/dev/null; then
+    echo "${variant}/ has its own brotli decoder; it should be shared from ../" >&2
     exit 1
   fi
 done

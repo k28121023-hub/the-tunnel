@@ -1,0 +1,9 @@
+This directory vendors tiny-brotli-dec-wasm 1.0.1, a streaming Brotli
+decoder by Jorge Prendes, licensed under MIT OR Apache-2.0.
+
+  https://github.com/jprendes/tiny-brotli-dec-wasm
+
+Only the WebAssembly decoder binary and the upstream license texts are
+included. The fetch hook in tools/compressed-loader.js loads this wasm
+so the game can ship a Brotli-compressed Godot engine on GitHub Pages,
+which cannot set Content-Encoding headers.

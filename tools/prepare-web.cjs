@@ -2,6 +2,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
+const { spawnSync } = require('node:child_process');
+
+function sha20(data) {
+  return crypto.createHash('sha256').update(data).digest('hex').slice(0, 20);
+}
+
+function brotliCompress(buffer) {
+  const cli = spawnSync('brotli', ['-q', '11', '-c'], {
+    input: buffer,
+    maxBuffer: Math.max(buffer.length * 2, 8 * 1024 * 1024),
+    encoding: null,
+  });
+  if (cli.status === 0 && cli.stdout && cli.stdout.length) {
+    const out = Buffer.from(cli.stdout);
+    if (zlib.brotliDecompressSync(out).equals(buffer)) return out;
+  }
+  const out = zlib.brotliCompressSync(buffer, {
+    params: {
+      [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+      [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buffer.length,
+    },
+  });
+  if (!zlib.brotliDecompressSync(out).equals(buffer)) throw new Error('Brotli compression validation failed');
+  return out;
+}
+
 function prepare(directory, options = {}) {
   const shareEngine = options.shareEngine || '';
   const sharePrefix = shareEngine ? (shareEngine.endsWith('/') ? shareEngine : shareEngine + '/') : '';
@@ -45,20 +71,31 @@ function prepare(directory, options = {}) {
   const compressed = {};
   for (const name of Object.keys(config.fileSizes)) {
     if (!/\.(wasm|pck)$/.test(name)) continue;
+    const isSharedEngine = Boolean(sharePrefix && name.startsWith(engine));
     const original = fs.readFileSync(path.join(directory,name));
+    compressed[name] = original.length;
+    // Subpath builds delete engine-* after rewrite; don't spend time
+    // compressing a copy that will not be published.
+    if (isSharedEngine) continue;
     const zipped = zlib.gzipSync(original,{level:9});
     if (!zlib.gunzipSync(zipped).equals(original)) throw new Error('Compression validation failed');
     fs.writeFileSync(path.join(directory,name+'.gz'),zipped);
-    compressed[name] = original.length;
-    console.log(name+': '+original.length+' -> '+zipped.length+' bytes');
+    console.log(name+': '+original.length+' -> '+zipped.length+' bytes gzip');
+    // Brotli pays off on the wasm (≈32% smaller than gzip). The pck is
+    // already internally compressed, so a .br copy would barely shrink it.
+    if (name.endsWith('.wasm')) {
+      const brotli = brotliCompress(original);
+      fs.writeFileSync(path.join(directory,name+'.br'),brotli);
+      console.log(name+': '+original.length+' -> '+brotli.length+' bytes brotli');
+    }
   }
-  // A subpath build (e.g. /travel/) can reuse the parent directory's hashed
-  // engine files so a player who already loaded the root game does not
-  // download the same 5 MiB wasm again.
+  // A subpath build (e.g. /food/ or /travel/) can reuse the parent
+  // directory's hashed engine files so a player who already loaded the
+  // root game does not download the same wasm again.
   let compressedFiles = compressed;
   const engineHref = sharePrefix + engine;
   if (sharePrefix) {
-    for (const file of [engine+'.js', engine+'.wasm.gz', engine+'.wasm', engine+'.audio.position.worklet.js', engine+'.audio.worklet.js']) {
+    for (const file of [engine+'.js', engine+'.wasm.gz', engine+'.wasm.br', engine+'.wasm', engine+'.audio.position.worklet.js', engine+'.audio.worklet.js']) {
       html = html.split(file).join(sharePrefix + file);
     }
     config.executable = engineHref;
@@ -72,7 +109,21 @@ function prepare(directory, options = {}) {
     ]));
     html = html.replace(/const GODOT_CONFIG = (\{[^\n]+\});/, 'const GODOT_CONFIG = '+JSON.stringify(config)+';');
   }
-  const loader = fs.readFileSync(path.join(__dirname,'compressed-loader.js'),'utf8').replace('__COMPRESSED_FILES__',JSON.stringify(compressedFiles));
+
+  const decoderSrc = path.join(__dirname, 'brotli-dec', 'tiny-brotli-dec-wasm.wasm');
+  if (!fs.existsSync(decoderSrc)) throw new Error('Missing vendored Brotli decoder: '+decoderSrc);
+  const decoderRaw = fs.readFileSync(decoderSrc);
+  const decoderGz = zlib.gzipSync(decoderRaw, {level:9});
+  if (!zlib.gunzipSync(decoderGz).equals(decoderRaw)) throw new Error('Decoder gzip validation failed');
+  const decoderName = 'asset-'+sha20(decoderRaw)+'.brotli-dec.wasm.gz';
+  if (!sharePrefix) {
+    fs.writeFileSync(path.join(directory, decoderName), decoderGz);
+    console.log(decoderName+': '+decoderRaw.length+' -> '+decoderGz.length+' bytes gzip');
+  }
+  const decoderHref = sharePrefix + decoderName;
+
+  const loader = fs.readFileSync(path.join(__dirname,'compressed-loader.js'),'utf8')
+    .replace('__COMPRESSED_CONFIG__', JSON.stringify({ files: compressedFiles, decoder: decoderHref }));
   html = html.replace('<script src="'+engineHref+'.js"></script>','<script>'+loader+'</script>\n<script src="'+engineHref+'.js"></script>');
   if (!html.includes('installCompressedDownloads')) throw new Error('Compressed loader injection failed');
   // Start the large downloads as soon as the HTML is parsed, instead of
@@ -81,7 +132,8 @@ function prepare(directory, options = {}) {
   const preloads = [
     splash ? '<link rel="preload" href="'+splash[1]+'" as="image">' : '',
     '<link rel="preload" href="'+engineHref+'.js" as="script">',
-    '<link rel="preload" href="'+engineHref+'.wasm.gz" as="fetch" crossorigin>',
+    '<link rel="preload" href="'+decoderHref+'" as="fetch" crossorigin>',
+    '<link rel="preload" href="'+engineHref+'.wasm.br" as="fetch" crossorigin fetchpriority="high">',
     '<link rel="preload" href="'+config.mainPack+'.gz" as="fetch" crossorigin>',
   ].filter(Boolean).join('\n\t\t');
   html = html.replace('</title>', '</title>\n\t\t'+preloads);
@@ -95,13 +147,19 @@ function prepare(directory, options = {}) {
   fs.writeFileSync(path.join(directory,'sw.js'), swSource);
   const precache = [
     engineHref+'.js',
-    engineHref+'.wasm.gz',
+    decoderHref,
+    engineHref+'.wasm.br',
     config.mainPack+'.gz',
     engineHref+'.audio.worklet.js',
     engineHref+'.audio.position.worklet.js',
     'loading-status.js',
     splash ? splash[1] : '',
   ].filter((name) => name && (name.includes('..') || fs.existsSync(path.join(directory, name))));
+  const parentSwRegister = sharePrefix
+    ? [
+        "  navigator.serviceWorker.register("+JSON.stringify(sharePrefix+'sw.js')+", {scope: "+JSON.stringify(sharePrefix)+"}).catch(function(){});",
+      ].join('\n')
+    : '';
   const swBootstrap = [
     '<script>',
     '(function(){',
@@ -109,9 +167,10 @@ function prepare(directory, options = {}) {
     '  var params = new URLSearchParams(location.search);',
     "  var scopeUrl = new URL('./', location.href);",
     "  var cachePrefix = 'tunnel-app:' + scopeUrl.pathname;",
+    "  var parentScopeUrl = "+JSON.stringify(sharePrefix)+" ? new URL("+JSON.stringify(sharePrefix || './')+", location.href).href : '';",
     "  if (params.has('nosw') || params.get('sw') === 'off') {",
     '    navigator.serviceWorker.getRegistrations().then(function(rs){',
-    '      return Promise.all(rs.filter(function(r){ return r.scope === scopeUrl.href; }).map(function(r){ return r.unregister(); }));',
+    '      return Promise.all(rs.filter(function(r){ return r.scope === scopeUrl.href || (parentScopeUrl && r.scope === parentScopeUrl); }).map(function(r){ return r.unregister(); }));',
     '    }).then(function(){',
     '      if (!window.caches) return;',
     '      return caches.keys().then(function(keys){',
@@ -122,6 +181,7 @@ function prepare(directory, options = {}) {
     '  }',
     "  var cacheName = cachePrefix + '"+cacheVersion+"';",
     '  var precache = '+JSON.stringify(precache)+';',
+    parentSwRegister,
     "  navigator.serviceWorker.register('sw.js', {scope: './'}).then(function(){",
     '    return navigator.serviceWorker.ready;',
     '  }).then(function(){',
@@ -132,14 +192,14 @@ function prepare(directory, options = {}) {
     '          if (hit) return;',
     "          return fetch(url, {cache: 'force-cache'}).then(function(res){",
     '            if (res && res.ok) return cache.put(url, res);',
-    '          });',
+    '          }).catch(function(){});',
     '        });',
     '      }));',
     '    });',
     '  });',
     '})();',
     '</script>',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   if (html.includes('</body>')) html = html.replace('</body>', swBootstrap+'\n</body>');
   else html += swBootstrap;
 
@@ -150,12 +210,15 @@ function prepare(directory, options = {}) {
     if (worklet.includes('..') || fs.existsSync(path.join(directory, worklet))) required.push(worklet);
     else console.warn('Missing audio worklet, it will 404 at runtime: '+worklet);
   }
+  if (!sharePrefix) {
+    required.push(engine+'.wasm.br', engine+'.wasm.gz', decoderName);
+  }
   for (const name of required) {
     if (!name || name.includes('..')) continue;
     if (!fs.existsSync(path.join(directory,name))) throw new Error('Missing published asset: '+name);
   }
   if (!fs.existsSync(path.join(directory,'sw.js'))) throw new Error('Service worker was not written');
-  console.log(JSON.stringify({engine,mainPack:config.mainPack,fileSizes:config.fileSizes,cacheVersion},null,2));
+  console.log(JSON.stringify({engine,mainPack:config.mainPack,fileSizes:config.fileSizes,cacheVersion,decoder:decoderHref},null,2));
   return config;
 }
 module.exports = prepare;
@@ -167,4 +230,3 @@ if (require.main === module) {
   }
   prepare(directory, { shareEngine });
 }
-
