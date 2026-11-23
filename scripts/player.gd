@@ -3,6 +3,8 @@ extends CharacterBody2D
 signal health_changed(current: int, maximum: int)
 signal damaged
 signal respawned
+signal items_changed
+signal weapons_lost
 @export var retain_weapons_on_hit := false
 @export var max_health := 100
 @export var hurt_invulnerability := 1.0
@@ -380,6 +382,7 @@ func _update_items() -> void:
 		# Lift the sword so its grip meets the raised front paw.
 		held.position = Vector2(18, -14 if active_weapon == "sword" else -2)
 		weapon_visual.add_child(held)
+	items_changed.emit()
 
 func enemy_contact(enemy: Node2D, amount: int) -> void:
 	if health <= 0 or hurt_remaining > 0.0 or amount <= 0 or not is_instance_valid(enemy) or enemy.is_queued_for_deletion():
@@ -392,18 +395,26 @@ func enemy_contact(enemy: Node2D, amount: int) -> void:
 		_update_items()
 		return
 	# Only a successful enemy hit removes weapons. Attacking never consumes them.
+	var lost_weapon := false
 	take_damage(amount)
 	if not retain_weapons_on_hit:
+		lost_weapon = inventory.has("sword") or inventory.has("cannon")
 		inventory.erase("sword")
 		inventory.erase("cannon")
+		swing_remaining = 0.0
+		cannon_input_buffer = 0.0
 	if is_instance_valid(swing):
 		swing.hide()
+		if lost_weapon:
+			swing.queue_free()
 	attack_time = 0.0
 	attack_line.hide()
 	if is_instance_valid(cannon_wave):
 		cannon_wave.queue_free()
 	pickup_notice = ""
 	_update_items()
+	if lost_weapon:
+		weapons_lost.emit()
 
 func _attack(item_id: String, reach: float) -> void:
 	if not inventory.has(item_id):

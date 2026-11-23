@@ -155,6 +155,8 @@ func _physics_process(delta: float) -> void:
 	if word_remaining <= 0:
 		_advance_word()
 	if teleporting: return
+	if is_instance_valid(player) and player.health > 0 and contact_area.overlaps_body(player):
+		player.enemy_contact(self, 20)
 	attack_cooldown = maxf(0.0, attack_cooldown - delta)
 	var offset := player.global_position - global_position
 	if attack_remaining > 0.0:
@@ -184,6 +186,7 @@ func die() -> void:
 	if dying: return
 	dying = true
 	attack_remaining = 0.0
+	contact_area.set_deferred("monitoring", false)
 	words.hide()
 	for child in words.get_children(): child.collision_layer = 0
 	collision_layer = 0

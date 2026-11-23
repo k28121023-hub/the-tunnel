@@ -11,13 +11,28 @@ var stopped := false
 var last_point := -1
 
 func _ready() -> void:
-	# Import existing equipment once; this is loot progression, not another inventory.
-	if player.inventory.has("sword"): weapon_owned = Weapon.SWORD
-	elif player.inventory.has("cannon"): weapon_owned = Weapon.LIGHT_CANNON
-	armor_owned = player.inventory.has("armor")
+	_sync_equipment()
+	if is_instance_valid(player) and player.has_signal("weapons_lost"):
+		player.weapons_lost.connect(_on_weapons_lost)
 	spawn_chest()
 
+func _sync_equipment() -> void:
+	if not is_instance_valid(player):
+		weapon_owned = Weapon.NONE
+		armor_owned = false
+		return
+	if player.inventory.has("sword"): weapon_owned = Weapon.SWORD
+	elif player.inventory.has("cannon"): weapon_owned = Weapon.LIGHT_CANNON
+	else: weapon_owned = Weapon.NONE
+	armor_owned = player.inventory.has("armor")
+
+func _on_weapons_lost() -> void:
+	_sync_equipment()
+	if not stopped and not is_instance_valid(active_chest):
+		remaining = minf(remaining, 0.5)
+
 func choose_reward() -> String:
+	_sync_equipment()
 	if weapon_owned == Weapon.NONE:
 		return ["sword","cannon"].pick_random()
 	if not armor_owned:
@@ -26,9 +41,7 @@ func choose_reward() -> String:
 
 func grant(item: String) -> void:
 	player.acquire_item(item)
-	if item == "sword": weapon_owned = Weapon.SWORD
-	elif item == "cannon": weapon_owned = Weapon.LIGHT_CANNON
-	elif item == "armor": armor_owned = true
+	_sync_equipment()
 
 func _physics_process(delta: float) -> void:
 	if stopped or is_instance_valid(active_chest): return

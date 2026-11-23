@@ -10,7 +10,9 @@ var chests: Node2D
 var cards: Array[PanelContainer] = []
 var boss_label: Label
 var health_label: Label
+var status_label: Label
 var clear_label: Label
+var weapon_lost_notice := false
 var hud: Control
 var camera: Camera2D
 var victory_overlay: ColorRect
@@ -22,7 +24,7 @@ var leaving := false
 func _ready() -> void:
 	player.spawn_point = Vector2(100,440)
 	player.position = player.spawn_point
-	player.retain_weapons_on_hit = true
+	player.retain_weapons_on_hit = false
 	if get_tree().has_meta("level_two_player"):
 		var saved: Dictionary = get_tree().get_meta("level_two_player")
 		get_tree().remove_meta("level_two_player")
@@ -88,6 +90,8 @@ func _ready() -> void:
 		chests.stop())
 	boss.defeated.connect(_show_victory)
 	player.health_changed.connect(func(_hp: int,_max_hp: int): _update_hud())
+	player.items_changed.connect(_on_player_items_changed)
+	player.weapons_lost.connect(_on_weapons_lost)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 	_update_hud()
@@ -126,6 +130,12 @@ func _build_hud() -> void:
 	boss_label = Label.new()
 	boss_label.add_theme_font_size_override("font_size",18)
 	hud.add_child(boss_label)
+	status_label = Label.new()
+	status_label.name = "WeaponStatus"
+	status_label.add_theme_font_size_override("font_size",17)
+	status_label.add_theme_color_override("font_outline_color", Color("071327"))
+	status_label.add_theme_constant_override("outline_size", 6)
+	hud.add_child(status_label)
 	health_label = Label.new()
 	health_label.add_theme_font_size_override("font_size",18)
 	health_label.modulate = Color("ff8c9e")
@@ -199,13 +209,22 @@ func _layout() -> void:
 	cards[0].size = Vector2(size.x-16,58)
 	boss_label.position = Vector2(12,64)
 	health_label.position = Vector2(size.x-150,64)
+	if is_instance_valid(status_label):
+		if size.x >= 760.0:
+			status_label.position = Vector2(330, 64)
+			status_label.size = Vector2(size.x - 490, 28)
+			status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		else:
+			status_label.position = Vector2(12, 90)
+			status_label.size = Vector2(size.x - 24, 24)
+			status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	victory_overlay.size = size
 	clear_label.position = Vector2(0,size.y*0.3)
 	clear_label.size.x = size.x
 	victory_options.position = Vector2((size.x-240)*0.5,size.y*0.52)
 	victory_options.size.x = 240
 	# Keep the existing inventory icons clear of the current-question strip.
-	player.item_icons.position = Vector2(30,120)
+	player.item_icons.position = Vector2(30, 142 if size.x < 760.0 else 120)
 
 func _update_hud() -> void:
 	var panel := cards[0]
@@ -220,5 +239,35 @@ func _update_hud() -> void:
 		style.set_border_width_all(2)
 		style.set_corner_radius_all(6)
 		panel.add_theme_stylebox_override("panel",style)
-	boss_label.text = "SOUL REAPER   HP %s  %d / 5" % ["■".repeat(boss.health) + "□".repeat(5-boss.health),boss.health]
-	health_label.text = "HP %d / %d" % [player.health,player.max_health]
+	var boss_text := "SOUL REAPER   HP %s  %d / 5" % ["■".repeat(boss.health) + "□".repeat(5-boss.health),boss.health]
+	if boss_label.text != boss_text:
+		boss_label.text = boss_text
+	var health_text := "HP %d / %d" % [player.health,player.max_health]
+	if health_label.text != health_text:
+		health_label.text = health_text
+	if is_instance_valid(status_label):
+		var status_text := ""
+		var status_color := Color("ffd166")
+		if not player.active_weapon.is_empty():
+			var weapon_name := "長劍" if player.active_weapon == "sword" else "光砲"
+			var switch_hint := " / Q 切換" if player.inventory.has("sword") and player.inventory.has("cannon") else ""
+			status_text = "武器：%s（Space 攻擊%s）" % [weapon_name, switch_hint]
+			status_color = Color("9be7ff")
+		elif weapon_lost_notice:
+			status_text = "武器已遺失！請從寶箱重新拿取"
+			status_color = Color("ff8c69")
+		else:
+			status_text = "目前無武器，請打開寶箱拿取"
+			status_color = Color("ffd166")
+		if status_label.text != status_text:
+			status_label.text = status_text
+		status_label.modulate = status_color
+
+func _on_player_items_changed() -> void:
+	if not player.active_weapon.is_empty():
+		weapon_lost_notice = false
+	_update_hud()
+
+func _on_weapons_lost() -> void:
+	weapon_lost_notice = true
+	_update_hud()

@@ -128,8 +128,10 @@ func _position_mobile_hud() -> void:
 	if level.has_method("_continue_game") and is_instance_valid(level.health_label):
 		level.health_label.position.y = 64+shift
 		level.boss_label.position.y = 64+shift
+		if is_instance_valid(level.get("status_label")):
+			level.status_label.position.y = (90.0 if size.x < 760.0 else 64.0) + shift
 		if not level.cards.is_empty(): level.cards[0].position.y = 4+shift
-		get_parent().item_icons.position.y = 120+shift
+		get_parent().item_icons.position.y = (142.0 if size.x < 760.0 else 120.0) + shift
 	else:
 		get_parent().item_icons.position.y = 126+shift
 
