@@ -5,8 +5,9 @@
  * __CACHE_VERSION__ is replaced at export time.
  *
  * Scope isolation: a root worker registered at /the-tunnel/ would also see
- * fetches under /the-tunnel/travel/. Only handle files in this worker's own
- * directory, and only delete caches tagged with this scope prefix.
+ * fetches under /the-tunnel/travel/ or /the-tunnel/food/. Only handle files
+ * in this worker's own directory, and only delete caches tagged with this
+ * scope prefix.
  */
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 const CACHE_PREFIX = 'tunnel-app:' + SCOPE_PATH;
@@ -36,7 +37,7 @@ function isOwnAsset(url) {
   if (url.pathname + '/' === SCOPE_PATH) return true;
   if (!url.pathname.startsWith(SCOPE_PATH)) return false;
   const rest = url.pathname.slice(SCOPE_PATH.length);
-  // Files in this directory only — not a child app such as /travel/.
+  // Files in this directory only — not a child app such as /travel/ or /food/.
   return rest === '' || !rest.includes('/');
 }
 
@@ -45,7 +46,7 @@ function isHashedAsset(url) {
 }
 
 // Hashed engine-* files in the parent directory (e.g. /the-tunnel/engine-...
-// requested from /the-tunnel/travel/) are identical across word-set builds.
+// requested from /the-tunnel/travel/ or /food/) are identical across word-set builds.
 // Serve them cache-first, searching all caches so a prior root visit hits.
 function isParentEngine(url) {
   if (url.origin !== self.location.origin) return false;

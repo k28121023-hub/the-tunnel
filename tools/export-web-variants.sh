@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Export the root (business, 11 words) and /travel/ (20 words) web builds
-# from the same tree. The active data/word_set.json and the UI font subset
+# Export the root (business, 11 words), /travel/ (20 words), and /food/
+# (20 words) web builds from the same tree. The active data/word_set.json and the UI font subset
 # are swapped per export, then restored so the working tree stays on the
 # default business set and the full committed font.
 set -euo pipefail
@@ -67,25 +67,29 @@ export_one() {
 
 export_one business "$WORKDIR/business"
 export_one travel "$WORKDIR/travel" "../"
+export_one food "$WORKDIR/food" "../"
 
 rm -rf build/web
-mkdir -p build/web/travel
+mkdir -p build/web/travel build/web/food
 cp -a "$WORKDIR/business/." build/web/
 cp -a "$WORKDIR/travel/." build/web/travel/
+cp -a "$WORKDIR/food/." build/web/food/
 touch build/web/.nojekyll
 
-# Travel must point at the shared root engine and must not ship a second copy.
-grep -q 'href="../engine-' build/web/travel/index.html
-grep -q 'src="../engine-' build/web/travel/index.html
+# Subpath builds must point at the shared root engine and must not ship a second copy.
 shopt -s nullglob
 root_wasm=(build/web/engine-*.wasm.gz)
 if [[ ${#root_wasm[@]} -lt 1 ]]; then
   echo "root engine wasm.gz missing" >&2
   exit 1
 fi
-if compgen -G 'build/web/travel/engine-*' >/dev/null; then
-  echo "travel/ still contains engine files; they should be shared from ../" >&2
-  exit 1
-fi
+for variant in travel food; do
+  grep -q 'href="../engine-' "build/web/${variant}/index.html"
+  grep -q 'src="../engine-' "build/web/${variant}/index.html"
+  if compgen -G "build/web/${variant}/engine-*" >/dev/null; then
+    echo "${variant}/ still contains engine files; they should be shared from ../" >&2
+    exit 1
+  fi
+done
 
-echo "Exported root (business) and /travel/ (travel) into build/web"
+echo "Exported root (business), /travel/ (travel), and /food/ (food) into build/web"

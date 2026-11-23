@@ -58,7 +58,7 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
           cp "$template" "$HOME/.local/share/godot/export_templates/4.5.1.stable/web_nothreads_release.zip"
 
-      - name: Export root and /travel/ web builds
+      - name: Export root, /travel/, and /food/ web builds
         run: |
           set -euo pipefail
           python3 -m pip install 'fonttools==4.60.1'
@@ -67,6 +67,8 @@ jobs:
           test -f build/web/sw.js
           test -f build/web/travel/index.html
           test -f build/web/travel/sw.js
+          test -f build/web/food/index.html
+          test -f build/web/food/sw.js
           touch build/web/.nojekyll
 
       - uses: actions/upload-pages-artifact@v4

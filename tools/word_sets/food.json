@@ -1,0 +1,85 @@
+{
+  "id": "food",
+  "words": [
+    {
+      "en": "fast-food restaurant",
+      "zh": "速食店"
+    },
+    {
+      "en": "buffet",
+      "zh": "自助餐"
+    },
+    {
+      "en": "cafe",
+      "zh": "咖啡館"
+    },
+    {
+      "en": "food court",
+      "zh": "美食街"
+    },
+    {
+      "en": "cafeteria",
+      "zh": "自助餐廳"
+    },
+    {
+      "en": "pub",
+      "zh": "酒吧"
+    },
+    {
+      "en": "pizzeria",
+      "zh": "披薩店"
+    },
+    {
+      "en": "food truck",
+      "zh": "餐車"
+    },
+    {
+      "en": "steakhouse",
+      "zh": "牛排館"
+    },
+    {
+      "en": "diner",
+      "zh": "小餐館"
+    },
+    {
+      "en": "sandwich bar",
+      "zh": "三明治店"
+    },
+    {
+      "en": "street vendor",
+      "zh": "路邊攤販"
+    },
+    {
+      "en": "offer",
+      "zh": "提供"
+    },
+    {
+      "en": "amazing",
+      "zh": "令人驚艷的"
+    },
+    {
+      "en": "afford",
+      "zh": "負擔得起"
+    },
+    {
+      "en": "serve",
+      "zh": "供應"
+    },
+    {
+      "en": "at least",
+      "zh": "至少"
+    },
+    {
+      "en": "value meal",
+      "zh": "超值套餐"
+    },
+    {
+      "en": "pasta",
+      "zh": "義大利麵"
+    },
+    {
+      "en": "mushroom",
+      "zh": "香菇"
+    }
+  ]
+}
